@@ -1,10 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Hello world 형님!</title>
+    <title>앱 실행 중...</title>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            var isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+            var isAndroid = /android/i.test(userAgent);
+
+            var appScheme = 'funhub://cmd1000?id=13000';
+            var iosStoreURL = 'https://apps.apple.com/app/id[APP_ID]'; // 👉 실제 iOS 앱 ID로 교체
+            var androidStoreURL = 'https://play.google.com/store/apps/details?id=[PACKAGE_NAME]'; // 👉 실제 패키지명으로 교체
+
+            var fallbackURL = isIOS ? iosStoreURL : isAndroid ? androidStoreURL : null;
+            var startTime = Date.now();
+
+            // 앱 실행 시도
+            window.location.href = appScheme;
+
+            // 일정 시간 후 마켓으로 이동
+            setTimeout(function () {
+                var elapsed = Date.now() - startTime;
+                if (elapsed < 2000 && fallbackURL) {
+                    window.location.href = fallbackURL;
+                }
+            }, 1500);
+        });
+    </script>
 </head>
 <body>
-
+<p>앱을 여는 중입니다...</p>
 </body>
 </html>
