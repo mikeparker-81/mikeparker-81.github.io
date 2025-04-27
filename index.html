@@ -3,13 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <title>앱 실행 중...</title>
+    <style>
+        /* 기본 스타일 */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+            text-align: center;
+        }
+        
+        .message {
+            font-size: 24px;
+            color: #333;
+            padding: 20px;
+            border-radius: 5px;
+            background-color: #ffffff;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 애니메이션 효과 */
+        .message span {
+            display: inline-block;
+            opacity: 0;
+            animation: fadeIn 2s forwards;
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loading-text {
+            font-weight: bold;
+        }
+    </style>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             var userAgent = navigator.userAgent || navigator.vendor || window.opera;
             var isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
             var isAndroid = /android/i.test(userAgent);
 
-            var appScheme = 'funhub://cmd1000?id=13000';
+            // URL에서 파라미터 id를 가져오기
+            var urlParams = new URLSearchParams(window.location.search);
+            var id = urlParams.get('id'); // URL에 포함된 'id' 파라미터 값 가져오기
+
+            // 기본 앱 스킴 설정
+            var appScheme = 'funhub://cmd1000?id=' + id; // 파라미터로 받은 id를 사용
+
             var iosStoreURL = 'https://apps.apple.com/app/id[APP_ID]'; // 👉 실제 iOS 앱 ID로 교체
             var androidStoreURL = 'https://play.google.com/store/apps/details?id=[PACKAGE_NAME]'; // 👉 실제 패키지명으로 교체
 
@@ -30,6 +80,9 @@
     </script>
 </head>
 <body>
-<p>앱을 여는 중입니다...</p>
+    <div class="message">
+        <span class="loading-text">앱을 여는 중입니다...</span><br>
+        <span>funhub으로 이동 중...</span>
+    </div>
 </body>
 </html>
