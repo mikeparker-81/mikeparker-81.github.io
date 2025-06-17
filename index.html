@@ -1,99 +1,112 @@
 <!DOCTYPE html>
 <html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta property="og:image" content="./funhub90percent.png" />        
-    <meta property="og:title" content="심심할 땐? 펀허브에서 웃음 충전하세요!" />
-    <meta property="og:description" content="밈, 짤, 유머, 커뮤니티 인기글까지! 놓치면 아쉬운 요즘 웃긴 거 다 여기 있습니다 😎" />        
+  <head>
+    <meta charset="UTF-8" />
+    <meta property="og:image" content="./funhub90percent.png" />
+    <meta
+      property="og:title"
+      content="심심할 땐? 펀허브에서 웃음 충전하세요!"
+    />
+    <meta
+      property="og:description"
+      content="밈, 짤, 유머, 커뮤니티 인기글까지! 놓치면 아쉬운 요즘 웃긴 거 다 여기 있습니다 😎"
+    />
 
     <title>Funhub</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f4f4f9;
-            text-align: center;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f4f4f9;
+        text-align: center;
+      }
 
-        .message {
-            font-size: 24px;
-            color: #333;
-            padding: 20px;
-            border-radius: 5px;
-            background-color: #ffffff;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-        }
+      .message {
+        font-size: 24px;
+        color: #333;
+        padding: 20px;
+        border-radius: 5px;
+        background-color: #ffffff;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+      }
 
-        .message span {
-            display: inline-block;
-            opacity: 0;
-            animation: fadeIn 2s forwards;
-        }
+      .message span {
+        display: inline-block;
+        opacity: 0;
+        animation: fadeIn 2s forwards;
+      }
 
-        @keyframes fadeIn {
-            0% {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
+      @keyframes fadeIn {
+        0% {
+          opacity: 0;
+          transform: translateY(10px);
         }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
-        .loading-text {
-            font-weight: bold;
-        }
+      .loading-text {
+        font-weight: bold;
+      }
     </style>
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-            const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
-            const isAndroid = /android/i.test(userAgent);
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            const id = urlParams.get('id') || '';
-            
-            const iosStoreURL = 'https://apps.apple.com/app/id6744699150';
-            const androidStoreURL = 'https://play.google.com/store/apps/details?id=com.exoplanets.funhub';
-            const appScheme = `funhub://cmd1000?id=${id}`;
+      document.addEventListener("DOMContentLoaded", function () {
+        const userAgent =
+          navigator.userAgent || navigator.vendor || window.opera;
+        const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+        const isAndroid = /android/i.test(userAgent);
 
-            if (isAndroid) {
-                // intent 방식으로 앱 실행 (최적화)
-                const intentURL = `intent://cmd1000?id=${id}#Intent;scheme=funhub;package=com.exoplanets.funhub;end`;
-                window.location.href = intentURL;
-            } else if (isIOS) {
-                // iOS는 intent 안 되므로 fallback + 감지
-                const start = Date.now();
-                window.location.href = appScheme;
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get("id") || "";
+        const marketId = urlParams.get("marketId") || "";
 
-                setTimeout(() => {
-                    const elapsed = Date.now() - start;
-                    if (elapsed < 2000) {
-                        window.location.href = iosStoreURL;
-                    }
-                }, 1500);
+        const iosStoreURL = "https://apps.apple.com/app/id6744699150";
+        const androidStoreURL =
+          "https://play.google.com/store/apps/details?id=com.exoplanets.funhub";
+
+        // marketId가 있으면 cmd1001, 없으면 cmd1000
+        const cmd = marketId ? "cmd1001" : "cmd1000";
+        const param = marketId || id;
+
+        if (isAndroid) {
+          // intent 방식으로 앱 실행 (최적화)
+          const intentURL = `intent://${cmd}?id=${param}#Intent;scheme=funhub;package=com.exoplanets.funhub;end`;
+          window.location.href = intentURL;
+        } else if (isIOS) {
+          // iOS는 intent 안 되므로 fallback + 감지
+          const appScheme = `funhub://${cmd}?id=${param}`;
+          const start = Date.now();
+          window.location.href = appScheme;
+
+          setTimeout(() => {
+            const elapsed = Date.now() - start;
+            if (elapsed < 2000) {
+              window.location.href = iosStoreURL;
             }
+          }, 1500);
+        }
 
-            // 앱이 실행되어 브라우저 백그라운드로 가면 페이지 닫기 시도
-            document.addEventListener('visibilitychange', function () {
-                if (document.hidden) {
-                    setTimeout(() => {
-                        window.close();
-                    }, 500);
-                }
-            });
+        // 앱 실행 시 브라우저 백그라운드 가면 페이지 닫기 시도
+        document.addEventListener("visibilitychange", function () {
+          if (document.hidden) {
+            setTimeout(() => {
+              window.close();
+            }, 500);
+          }
         });
+      });
     </script>
-</head>
-<body>
+  </head>
+  <body>
     <div class="message">
-        <span class="loading-text">Loading...</span><br>
-        <span>Funhub으로 이동 중</span>
+      <span class="loading-text">Loading...</span><br />
+      <span>Funhub으로 이동 중</span>
     </div>
-</body>
+  </body>
 </html>
