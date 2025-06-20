@@ -57,13 +57,13 @@
             
             const urlParams = new URLSearchParams(window.location.search);
             const id = urlParams.get('id') || '';
-            
+
             const iosStoreURL = 'https://apps.apple.com/app/id6744699150';
             const androidStoreURL = 'https://play.google.com/store/apps/details?id=com.exoplanets.funhub';
             const appScheme = `funhub://cmd1000?id=${id}`;
 
-            if (isIos) {
-                // iOS는 intent 안 되므로 fallback + 감지
+            if (isIOS) {
+                // iOS: 앱 실행 시도 후 실패 시 App Store 이동
                 const start = Date.now();
                 window.location.href = appScheme;
 
@@ -72,14 +72,21 @@
                     if (elapsed < 2000) {
                         window.location.href = iosStoreURL;
                     }
-                }, 1500);                
-            } else {
-                // intent 방식으로 앱 실행 (최적화)
+                }, 1500);
+            } else if (isAndroid) {
+                // Android: intent로 앱 실행
                 const intentURL = `intent://cmd1000?id=${id}#Intent;scheme=funhub;package=com.exoplanets.funhub;end`;
-                window.location.href = intentURL;                
-            } 
+                window.location.href = intentURL;
+            } else {
+                // 기타: 그냥 랜딩 또는 안내 페이지
+                document.querySelector('.message').innerHTML = `
+                    <span>지원되지 않는 기기입니다.</span><br>
+                    <a href="${iosStoreURL}" target="_blank">iOS 앱 열기</a><br>
+                    <a href="${androidStoreURL}" target="_blank">Android 앱 열기</a>
+                `;
+            }
 
-            // 앱이 실행되어 브라우저 백그라운드로 가면 페이지 닫기 시도
+            // 앱 실행 후 브라우저 백그라운드 감지 -> 창 닫기
             document.addEventListener('visibilitychange', function () {
                 if (document.hidden) {
                     setTimeout(() => {
@@ -92,8 +99,8 @@
 </head>
 <body>
     <div class="message">
-        <span class="loading-text">Loading...</span><br>
-        <span>Funhub으로 이동 중</span>
+        <span class="loading-text">앱 실행 중...</span><br>
+        <span>잠시만 기다려주세요.</span>
     </div>
 </body>
 </html>
