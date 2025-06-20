@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Funhub 명함 배너</title>
+  <style>
+    .funhub-card {
+      display: flex;
+      align-items: center;
+      width: 336px;
+      height: 192px;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      background: #fffefa;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      text-decoration: none;
+      color: #333;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow: hidden;
+      transition: transform 0.2s ease;
+    }
+    .funhub-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    .funhub-card img {
+      width: 70px;
+      height: 70px;
+      margin: 10px;
+      border-radius: 8px;
+      border: 2px solid #FFD700;
+      flex-shrink: 0;
+    }
+    .funhub-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 10px;
+      font-size: 12px;
+    }
+    .funhub-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #222;
+      margin-bottom: 4px;
+    }
+    .funhub-title span {
+      color: #FFD700;
+    }
+    .funhub-desc {
+      font-size: 11px;
+      color: #555;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <a href="https://mikeparker-81.github.io/qr.html" class="funhub-card" target="_blank" rel="noopener noreferrer">
+    <img src="./qrcat.png" alt="Funhub QR코드">
+    <div class="funhub-text">
+      <div class="funhub-title"><span>Funhub</span> - 심심할 땐 여기로!</div>
+      <div class="funhub-desc">
+        커뮤니티 글부터 핫딜까지! 한눈에 보는 Funhub 🔥<br>
+        공유도 쉽고, 눈팅만 해도 OK!<br>
+        당신의 하루를 더 즐겁게!
+      </div>
+    </div>
+  </a>
+</body>
+</html>
