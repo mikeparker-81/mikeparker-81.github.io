@@ -11,12 +11,12 @@
       width: 100%;
       max-width: 400px;
       height: 100px;
-      border: 2px solid #FFD700;
+      border: 1px solid #eee;
       border-radius: 12px;
-      background: #fff8dc;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      background: #ffffff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
       text-decoration: none;
-      color: #333;
+      color: #333333;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       overflow: hidden;
     }
@@ -25,7 +25,7 @@
       width: 90px;
       margin: 5px;
       border-radius: 8px;
-      border: 1px solid #FFD700;
+      border: 1px solid #FFD700; /* 노란 테두리 포인트 */
     }
     .funhub-text {
       display: flex;
@@ -36,20 +36,24 @@
     .funhub-title {
       font-size: 16px;
       font-weight: bold;
-      color: #FF8C00;
+      color: #222222; /* 거의 검정 */
+    }
+    .funhub-title span {
+      color: #FFD700; /* Funhub 글자만 노랑 포인트 */
     }
     .funhub-desc {
       font-size: 12px;
-      color: #555;
+      color: #555555;
+      line-height: 1.4;
     }
   </style>
 </head>
 <body>
   <a href="https://mikeparker-81.github.io/qr.html" class="funhub-banner" target="_blank" rel="noopener noreferrer">
-    <img src="./funhubqr_cat.png" alt="Funhub QR코드">
+    <img src="./funhubqr_regular.png" alt="Funhub QR코드">
     <div class="funhub-text">
-      <div class="funhub-title">Funhub - 심심할 땐 여기!</div>
-      <div class="funhub-desc">커뮤니티, 핫딜 모아보기📱 빠른 눈팅과 공유를 Funhub에서!</div>
+      <div class="funhub-title"><span>Funhub</span> - 심심할 땐 여기!</div>
+      <div class="funhub-desc">커뮤니티와 핫딜을 한눈에! 빠른 눈팅과 공유까지 모두 가능한 Funhub!</div>
     </div>
   </a>
 </body>
