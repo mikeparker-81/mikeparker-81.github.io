@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta property="og:image" content="./tongtong_og.png" />
+  <meta property="og:title" content="돈 버는 꿀앱! 통통이로 오늘도 짤짤이 수익!" />
+  <meta property="og:description" content="앱테크의 끝판왕 통통이 💸 광고 보고, 퀴즈풀고, 출석만 해도 포인트 쌓인다! 귀찮지 않고 실속 있는 리워드, 지금 시작해보세요!" />
+
+  <title>Funhub</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f4f4f9;
+      text-align: center;
+    }
+
+    .message {
+      font-size: 24px;
+      color: #333;
+      padding: 20px;
+      border-radius: 5px;
+      background-color: #ffffff;
+      box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .message span {
+      display: inline-block;
+      opacity: 0;
+      animation: fadeIn 2s forwards;
+    }
+
+    @keyframes fadeIn {
+      0% {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .loading-text {
+      font-weight: bold;
+    }
+  </style>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const userAgent =
+        navigator.userAgent || navigator.vendor || window.opera;
+      const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+      const isAndroid = /android/i.test(userAgent);
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const value = urlParams.get("value") || "";
+      const marketId = urlParams.get("marketId") || "";
+
+      const iosStoreURL = "https://apps.apple.com/app/idkr.joybros.tongtong.ios";
+      const androidStoreURL =
+        "https://play.google.com/store/apps/details?id=kr.joybros.tongtong";
+
+
+      if (isAndroid) {
+        // intent 방식으로 앱 실행 (최적화)
+        const intentURL = `intent://cmd=tab&value=${value ?? '0'}#Intent;scheme=tongtong;package=kr.joybros.tongtong;end`;
+        window.location.href = intentURL;
+      } else if (isIOS) {
+        // iOS는 intent 안 되므로 fallback + 감지
+        const appScheme = `tongtong://cmd=tab&value=0`;
+        const start = Date.now();
+        window.location.href = appScheme;
+
+        setTimeout(() => {
+          const elapsed = Date.now() - start;
+          if (elapsed < 2000) {
+            window.location.href = iosStoreURL;
+          }
+        }, 1500);
+      }
+
+      // 앱 실행 시 브라우저 백그라운드 가면 페이지 닫기 시도
+      document.addEventListener("visibilitychange", function () {
+        if (document.hidden) {
+          setTimeout(() => {
+            window.close();
+          }, 500);
+        }
+      });
+    });
+  </script>
+</head>
+
+<body>
+  <div class="message">
+    <img src="./funhubqr_cat.png" />
+    <span>통통이으로 이동 중</span>
+
+  </div>
+</body>
+
+</html>
