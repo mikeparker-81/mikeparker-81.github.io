@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>터치 생존 게임</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      touch-action: none;
+      background-color: #111;
+    }
+    .circle {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      background: rgba(0, 200, 255, 0.7);
+      border-radius: 50%;
+      transform: scale(1);
+      animation: pulse 1s infinite;
+      pointer-events: none;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
+    #message {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 24px;
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <div id="message">2~5명 손가락을 동시에 올려주세요</div>
+
+  <script>
+    const touches = {};
+    let gameStarted = false;
+    let checkIdleTimeout = null;
+
+    function createCircle(id, x, y) {
+      const circle = document.createElement('div');
+      circle.classList.add('circle');
+      circle.style.left = `${x - 50}px`;
+      circle.style.top = `${y - 50}px`;
+      circle.dataset.id = id;
+      document.body.appendChild(circle);
+      return circle;
+    }
+
+    function removeCircle(id) {
+      const el = document.querySelector(`.circle[data-id='${id}']`);
+      if (el) el.remove();
+    }
+
+    function updateMessage(msg) {
+      document.getElementById('message').textContent = msg;
+    }
+
+    function startGame() {
+      gameStarted = true;
+      updateMessage('게임 시작! 랜덤 탈락 중...');
+      navigator.vibrate && navigator.vibrate([300, 100, 300]);
+
+      let ids = Object.keys(touches);
+
+      const interval = setInterval(() => {
+        if (ids.length <= 1) {
+          clearInterval(interval);
+          updateMessage(`🎯 걸린 사람: ${ids[0]}`);
+          return;
+        }
+        const randomIndex = Math.floor(Math.random() * ids.length);
+        const removedId = ids.splice(randomIndex, 1)[0];
+        removeCircle(removedId);
+      }, 1500);
+    }
+
+    function checkIfIdle() {
+      if (Object.keys(touches).length >= 2) {
+        if (checkIdleTimeout) clearTimeout(checkIdleTimeout);
+        checkIdleTimeout = setTimeout(() => {
+          if (!gameStarted) startGame();
+        }, 3000);
+      }
+    }
+
+    window.addEventListener('touchstart', (e) => {
+      if (gameStarted) return;
+      for (const t of e.changedTouches) {
+        if (Object.keys(touches).length >= 5) return;
+        touches[t.identifier] = createCircle(t.identifier, t.clientX, t.clientY);
+      }
+      checkIfIdle();
+    });
+
+    window.addEventListener('touchend', (e) => {
+      for (const t of e.changedTouches) {
+        removeCircle(t.identifier);
+        delete touches[t.identifier];
+      }
+      if (!gameStarted) updateMessage('2~5명 손가락을 동시에 올려주세요');
+    });
+  </script>
+</body>
+</html>
