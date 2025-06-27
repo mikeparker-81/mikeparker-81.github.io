@@ -412,24 +412,16 @@
         eliminatedPlayers = [];
         round = 1;
 
-        // 처음부터 5명 이하면 바로 결승전
-        isFinal = remainingPlayers.length <= 5;
+        isFinal = false; // 🔥 초기엔 무조건 false (바로 결승 안 감)
         waitingForNext = false;
 
         document.getElementById("config").style.display = "none";
         document.getElementById("results-table").style.display = "none";
 
-        if (isFinal) {
-          updateMessage(
-            `결승전: 손가락을 올려주세요 (최소 2명, 최대 5명)`,
-            false
-          );
-        } else {
-          updateMessage(
-            `${round}라운드: 손가락을 올려주세요 (최소 2명, 최대 5명)`,
-            false
-          );
-        }
+        updateMessage(
+          `${round}라운드: 손가락을 올려주세요 (최소 2명, 최대 5명)`,
+          false
+        );
         updateWinnersDisplay();
       }
 
@@ -505,11 +497,6 @@
         if (!waitingForNext) return;
         waitingForNext = false;
 
-        if (isFinal) {
-          showFinalResults();
-          return;
-        }
-
         // 다음 라운드 그룹 구성
         const nextGroup = [];
 
@@ -531,11 +518,9 @@
         } else if (nextGroup.length >= 2) {
           // 이 그룹으로 다음 라운드 실행을 위해 터치 대기 상태로 돌림
           round++;
-          isFinal =
-            remainingPlayers.length === 0 &&
-            allSurvivors.length + nextGroup.length <= 5;
 
-          const roundLabel = isFinal ? "결승전" : `${round}라운드`;
+          // 결승전 여부 판단은 지금 안 함!
+          const roundLabel = `${round}라운드`;
           updateMessage(
             `${roundLabel}: 손가락을 올려주세요 (최소 2명, 최대 5명)`,
             false
@@ -547,17 +532,31 @@
           return;
         }
 
-        // 모두 다 끝났고 생존자가 5명 이하이면 결승전
-        if (remainingPlayers.length === 0 && allSurvivors.length <= 5) {
-          remainingPlayers = allSurvivors.map((s) => s.number);
+        // 모든 라운드 끝나고 생존자가 2~5명 남았으면 결승전
+        const survivorsSet = new Set(allSurvivors.map((s) => s.number));
+        if (remainingPlayers.length === 0 && survivorsSet.size >= 2) {
+          remainingPlayers = Array.from(survivorsSet);
           allSurvivors = [];
           round++;
           isFinal = true;
+
           updateMessage(
             `결승전: 모든 생존자가 참여합니다 (최소 2명, 최대 5명)`,
             false
           );
           updateWinnersDisplay();
+          return;
+        }
+
+        // 단 1명만 남았을 경우, 자동 우승
+        if (remainingPlayers.length === 1 && survivorsSet.size === 0) {
+          allSurvivors.push({
+            round: round,
+            number: remainingPlayers[0],
+            color: getRandomColor(), // 혹은 이전 기록 가져오기
+            isFinal: true,
+          });
+          showFinalResults();
           return;
         }
       }
