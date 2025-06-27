@@ -1,200 +1,271 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>서바이벌 게임</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1" />
+  <title>터치 생존 리그</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
       overflow: hidden;
-      font-family: 'Pretendard', sans-serif;
-      background: #fef9f3;
+      touch-action: none;
+      background: linear-gradient(135deg, #0f0f0f, #1c1c1c);
+      font-family: 'Segoe UI', sans-serif;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
     }
 
-    canvas {
-      display: block;
-    }
-
-    #info {
+    #config {
       position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(255, 255, 255, 0.8);
-      padding: 8px 12px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-      font-size: 14px;
+      top: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 20px;
+      text-align: center;
+      z-index: 9999;
+      background-color: rgba(0, 0, 0, 0.6);
+      padding: 12px 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px #00ffff55;
     }
 
-    #winnerOverlay {
+    #config select, #config button {
+      margin: 10px;
+      padding: 6px 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+    }
+
+    .circle {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      transform: scale(1);
+      animation: pulse 1s infinite;
+      pointer-events: none;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      color: #fff;
-      font-size: 32px;
+      font-size: 26px;
       font-weight: bold;
-      z-index: 10;
-      display: none;
+      color: white;
+      box-shadow: 0 0 10px rgba(255,255,255,0.5);
     }
 
-    #winnerOverlay .trophy {
-      font-size: 64px;
-      margin-bottom: 20px;
-      animation: trophy 1s ease infinite alternate;
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+      100% { transform: scale(1); }
     }
 
-    @keyframes trophy {
-      from {
-        transform: translateY(0);
-      }
-
-      to {
-        transform: translateY(-10px);
-      }
+    #message {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #00ffff;
+      font-size: 24px;
+      background-color: rgba(0, 0, 0, 0.6);
+      padding: 10px 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #00ffff55;
+      z-index: 9999;
     }
   </style>
 </head>
-
 <body>
-  <canvas id="gameCanvas"></canvas>
-  <div id="info">라운드: 0<br>당첨자: 없음</div>
-  <div id="winnerOverlay" onclick="location.reload()">
-    <div class="trophy">🏆</div>
-    우승자: <span id="winnerNumber"></span>번!
-    <div style="font-size:14px; margin-top:10px;">터치하면 다시 시작</div>
+  <div id="config">
+    <label for="playerCount">참가 인원:</label>
+    <select id="playerCount">
+      <option value="5">5명</option>
+      <option value="10">10명</option>
+      <option value="15">15명</option>
+      <option value="20">20명</option>
+      <option value="25">25명</option>
+    </select>
+    <button onclick="startLeague()">리그 시작</button>
   </div>
-  <audio id="popSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_0e9881b1ae.mp3"></audio>
+  <div id="message">참가 인원을 선택하고 시작하세요</div>
 
   <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const info = document.getElementById('info');
-    const overlay = document.getElementById('winnerOverlay');
-    const winnerSpan = document.getElementById('winnerNumber');
-    const popSound = document.getElementById('popSound');
+    const touches = {};
+    let gameStarted = false;
+    let checkIdleTimeout = null;
+    let totalPlayers = 0;
+    let remainingPlayers = [];
+    let finalists = [];
+    let round = 1;
+    const maxGroup = 5;
 
-    let players = [];
-    let roundWinners = [];
-    let currentRound = 0;
-    let maxTouch = 5;
-    let touched = [];
-    let radius = 40;
-    let gameActive = true;
-
-    function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+    function getRandomColor() {
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) color += letters[Math.floor(Math.random() * 16)];
+      return color;
     }
 
-    window.addEventListener('resize', resize);
-    resize();
+    function createCircle(id, x, y, number, color) {
+      const circle = document.createElement('div');
+      circle.classList.add('circle');
+      circle.style.left = `${x - 50}px`;
+      circle.style.top = `${y - 50}px`;
+      circle.style.backgroundColor = color;
+      circle.dataset.id = id;
+      circle.textContent = number;
+      document.body.appendChild(circle);
+      return circle;
+    }
 
-    function createPlayers(count) {
-      players = [];
-      for (let i = 1; i <= count; i++) {
-        players.push(i);
+    function removeCircle(id) {
+      const el = document.querySelector(`.circle[data-id='${id}']`);
+      if (el) el.remove();
+    }
+
+    function updateCirclePosition(id, x, y) {
+      const el = document.querySelector(`.circle[data-id='${id}']`);
+      if (el) {
+        el.style.left = `${x - 50}px`;
+        el.style.top = `${y - 50}px`;
       }
     }
 
-    function drawCircles(arr, highlight = null, permanent = false) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      arr.forEach((num, i) => {
-        const x = Math.random() * (canvas.width - 2 * radius) + radius;
-        const y = Math.random() * (canvas.height - 2 * radius) + radius;
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = highlight === num ? '#ff6b6b' : '#f4c542';
-        ctx.fill();
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        ctx.fillStyle = '#000';
-        ctx.font = 'bold 20px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(num, x, y);
-      });
+    function updateMessage(msg, visible = true) {
+      const el = document.getElementById('message');
+      el.textContent = msg;
+      el.style.display = visible ? 'block' : 'none';
     }
 
-    function startNextRound() {
-      touched = [];
-      currentRound++;
-      info.innerHTML = `라운드: ${currentRound}<br>당첨자: ${roundWinners.join(', ') || '없음'}`;
+    function startLeague() {
+      totalPlayers = parseInt(document.getElementById('playerCount').value);
+      remainingPlayers = Array.from({ length: totalPlayers }, (_, i) => i + 1);
+      finalists = [];
+      round = 1;
+      document.getElementById('config').style.display = 'none';
+      updateMessage(`${totalPlayers === 5 ? '🔥 결승전' : `${round}라운드`}: 손가락을 올려주세요 (최대 ${maxGroup}명)`, true);
     }
 
-    function handleTouch(x, y) {
-      if (!gameActive || touched.length >= maxTouch) return;
+    function startGame() {
+      gameStarted = true;
+      updateMessage(`🎮 게임 시작! ${round}라운드 랜덤 탈락 중...`, true);
+      navigator.vibrate && navigator.vibrate([300, 100, 300]);
 
-      let touchNum = null;
-      do {
-        touchNum = players[Math.floor(Math.random() * players.length)];
-      } while (touched.includes(touchNum));
+      const ids = Object.keys(touches);
 
-      touched.push(touchNum);
-      drawCircles(touched);
+      const interval = setInterval(() => {
+        if (ids.length <= 1) {
+          clearInterval(interval);
+          const winnerId = ids[0];
+          const winner = touches[winnerId];
+          updateMessage(`🎯 ${winner.number}번 (${winner.color}) 생존!`, true);
+          finalists.push({ number: winner.number, color: winner.color });
+          gameStarted = false;
 
-      if (touched.length === maxTouch) {
-        setTimeout(() => {
-          const winner = touched[Math.floor(Math.random() * touched.length)];
-          roundWinners.push(winner);
-          popSound.play();
+          Object.keys(touches).forEach(removeCircle);
+          for (let id in touches) delete touches[id];
 
-          if (roundWinners.length === 1) {
-            players = roundWinners;
-            roundWinners = [];
-            if (players.length === 1) {
-              showWinner(players[0]);
-              return;
-            }
+          if (remainingPlayers.length > 0) {
+            round++;
+            setTimeout(() => {
+              updateMessage(`${round}라운드: 손가락을 올려주세요 (최대 ${maxGroup}명)`);
+            }, 2000);
+          } else if (finalists.length > 1) {
+            remainingPlayers = finalists.map(f => f.number);
+            finalists = [];
+            round = '🔥 결승전';
+            setTimeout(() => {
+              updateMessage(`${round}: 손가락을 올려주세요 (최대 ${maxGroup}명)`);
+            }, 2000);
+          } else {
+            updateMessage(`🏆 최종 우승자: ${finalists[0].number}번 (${finalists[0].color})!`);
+            waitForReset();
           }
+          return;
+        }
 
-          startNextRound();
-        }, 2000);
+        const randomIndex = Math.floor(Math.random() * ids.length);
+        const removedId = ids.splice(randomIndex, 1)[0];
+        removeCircle(removedId);
+      }, 1500);
+    }
+
+    function waitForReset() {
+      const msg = document.getElementById('message');
+      msg.textContent += '\n👉 터치하면 다시 시작합니다';
+      msg.style.cursor = 'pointer';
+      msg.addEventListener('click', () => {
+        msg.style.cursor = 'default';
+        msg.removeEventListener('click', waitForReset);
+        resetGame();
+      }, { once: true });
+    }
+
+    function resetGame() {
+      document.getElementById('config').style.display = 'block';
+      updateMessage('참가 인원을 선택하고 시작하세요');
+      for (let id in touches) removeCircle(id);
+      for (let id in touches) delete touches[id];
+      gameStarted = false;
+      totalPlayers = 0;
+      remainingPlayers = [];
+      finalists = [];
+      round = 1;
+    }
+
+    function checkIfIdle() {
+      if (Object.keys(touches).length >= 2) {
+        if (checkIdleTimeout) clearTimeout(checkIdleTimeout);
+        checkIdleTimeout = setTimeout(() => {
+          if (!gameStarted) {
+            startGame();
+          }
+        }, 3000);
       }
     }
 
-    function showWinner(num) {
-      gameActive = false;
-      winnerSpan.textContent = num;
-      overlay.style.display = 'flex';
-    }
-
-    canvas.addEventListener('touchstart', (e) => {
-      if (!gameActive) return;
-      e.preventDefault();
-      const touch = e.touches[0];
-      handleTouch(touch.clientX, touch.clientY);
+    window.addEventListener('touchstart', (e) => {
+      if (gameStarted) return;
+      updateMessage('', false); // 터치하면 메시지 숨김
+      for (const t of e.changedTouches) {
+        if (Object.keys(touches).length >= maxGroup) return;
+        if (!touches[t.identifier]) {
+          const number = remainingPlayers.shift();
+          if (!number) return;
+          const color = getRandomColor();
+          const circle = createCircle(t.identifier, t.clientX, t.clientY, number, color);
+          touches[t.identifier] = { el: circle, number, color };
+        }
+      }
+      checkIfIdle();
     });
 
-    canvas.addEventListener('mousedown', (e) => {
-      if (!gameActive) return;
-      handleTouch(e.clientX, e.clientY);
+    window.addEventListener('touchmove', (e) => {
+      if (gameStarted) return;
+      for (const t of e.changedTouches) {
+        if (touches[t.identifier]) updateCirclePosition(t.identifier, t.clientX, t.clientY);
+      }
     });
 
-    // 시작
-    const total = prompt('참가 인원을 입력하세요 (최소 5명)', '15');
-    if (total && parseInt(total) >= 5) {
-      createPlayers(parseInt(total));
-      startNextRound();
-    } else {
-      alert('5명 이상 입력해주세요.');
-      location.reload();
-    }
+    window.addEventListener('touchend', (e) => {
+      if (gameStarted) return;
+      for (const t of e.changedTouches) {
+        if (touches[t.identifier]) {
+          removeCircle(t.identifier);
+          remainingPlayers.unshift(touches[t.identifier].number);
+          delete touches[t.identifier];
+        }
+      }
+      updateMessage(`${round}라운드: 손가락을 올려주세요 (최대 ${maxGroup}명)`);
+    });
+
+    document.addEventListener('gesturestart', e => e.preventDefault());
+    document.addEventListener('gesturechange', e => e.preventDefault());
+    document.addEventListener('gestureend', e => e.preventDefault());
+    document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
   </script>
 </body>
-
 </html>
-
