@@ -1,570 +1,271 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1" />
-<title>터치 생존 리그</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Orbitron&display=swap');
-  html, body {
-    margin: 0; padding: 0; overflow: hidden; touch-action: none;
-    background: linear-gradient(135deg, #0f0f0f, #1c1c1c);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    -webkit-user-select: none; -ms-user-select: none; user-select: none;
-    height: 100vh;
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1" />
+  <title>터치 생존 리그</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      touch-action: none;
+      background: linear-gradient(135deg, #0f0f0f, #1c1c1c);
+      font-family: 'Segoe UI', sans-serif;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
 
-  #overlay {
-    position: fixed; top:0; left:0; width:100vw; height:100vh;
-    background: rgba(0,0,0,0.85);
-    z-index: 10000;
-    display: flex; flex-wrap: wrap;
-    justify-content: center; align-content: center;
-    gap: 14px;
-    padding: 30px;
-    box-sizing: border-box;
-  }
-  #overlay button {
-    flex: 1 1 40%;
-    max-width: 120px;
-    background: #111;
-    border: 2px solid #00ffff;
-    color: #00ffff;
-    font-size: 18px;
-    font-weight: 700;
-    border-radius: 14px;
-    padding: 14px 0;
-    cursor: pointer;
-    transition: background-color 0.3s, color 0.3s;
-  }
-  #overlay button:hover:not(:disabled) {
-    background-color: #00ffff;
-    color: #111;
-  }
-  #overlay #startBtn {
-    flex-basis: 100%;
-    max-width: 260px;
-    margin-top: 20px;
-    font-size: 20px;
-    font-weight: 900;
-  }
-  #overlay #startBtn:disabled {
-    border-color: #555;
-    color: #555;
-    cursor: not-allowed;
-  }
+    #config {
+      position: absolute;
+      top: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 20px;
+      text-align: center;
+      z-index: 9999;
+      background-color: rgba(0, 0, 0, 0.6);
+      padding: 12px 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px #00ffff55;
+    }
 
-  #message {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vw;
-    height: 40px;
-    line-height: 40px;
-    color: #00ffff;
-    font-size: 20px;
-    text-align: center;
-    font-weight: 700;
-    user-select: none;
-    pointer-events: none;
-    z-index: 9999;
-    font-family: 'Orbitron', monospace, sans-serif;
-    letter-spacing: 0.06em;
-    background: transparent;
-    text-shadow:
-      0 0 6px #00ffffaa,
-      0 0 10px #00ffff88;
-  }
+    #config select, #config button {
+      margin: 10px;
+      padding: 6px 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+    }
 
-  .circle {
-    position: absolute;
-    width: 100px; height: 100px;
-    border-radius: 50%;
-    background-color: #222;
-    box-shadow: 0 0 14px #00ffffaa inset;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: auto;
-    user-select: none;
-    font-weight: 900;
-    font-size: 48px;
-    color: white;
-    cursor: grab;
-    touch-action: none;
-    transition: transform 0.6s ease-in-out;
-  }
-  .circle:active {
-    cursor: grabbing;
-  }
+    .circle {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      transform: scale(1);
+      animation: pulse 1s infinite;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      font-weight: bold;
+      color: white;
+      box-shadow: 0 0 10px rgba(255,255,255,0.5);
+    }
 
-  .circle.pulse {
-    animation: pulseAnim 1.2s infinite alternate ease-in-out;
-  }
-  @keyframes pulseAnim {
-    0%   { transform: scale(1); }
-    100% { transform: scale(1.3); }
-  }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
 
-  .circle .num-outside {
-    position: absolute;
-    top: 50%;
-    left: 110%;
-    transform: translateY(-50%);
-    font-size: 18px;
-    font-weight: 700;
-    color: white;
-    text-shadow: 0 0 6px #000;
-    user-select: none;
-    pointer-events: none;
-  }
-
-  #leagueBoard {
-    position: fixed;
-    top: 40px;
-    left: 10px;
-    max-width: 300px;
-    max-height: 90vh;
-    overflow-y: auto;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 12px;
-    padding: 8px 12px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #00ffff;
-    box-shadow:
-      0 0 10px #00ffffaa;
-    user-select: none;
-    z-index: 9998;
-  }
-  #leagueBoard h3 {
-    margin: 0 0 10px 0;
-    font-weight: 900;
-    font-size: 18px;
-    text-align: center;
-  }
-  #leagueBoard ul {
-    list-style: none;
-    padding: 0; margin: 0;
-  }
-  #leagueBoard li {
-    margin-bottom: 6px;
-    font-weight: 700;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  #leagueBoard .color-box {
-    width: 18px;
-    height: 18px;
-    border-radius: 4px;
-    border: 1.5px solid #00ffff;
-    box-shadow: 0 0 6px #00ffffaa;
-  }
-
-</style>
+    #message {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #00ffff;
+      font-size: 24px;
+      background-color: rgba(0, 0, 0, 0.6);
+      padding: 10px 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #00ffff55;
+      z-index: 9999;
+    }
+  </style>
 </head>
 <body>
+  <div id="config">
+    <label for="playerCount">참가 인원:</label>
+    <select id="playerCount">
+      <option value="5">5명</option>
+      <option value="10">10명</option>
+      <option value="15">15명</option>
+      <option value="20">20명</option>
+      <option value="25">25명</option>
+    </select>
+    <button onclick="startLeague()">리그 시작</button>
+  </div>
+  <div id="message">참가 인원을 선택하고 시작하세요</div>
 
-<div id="overlay">
-  <button data-count="5">5명 이하</button>
-  <button data-count="10">10명 이하</button>
-  <button data-count="15">15명 이하</button>
-  <button data-count="20">20명 이하</button>
-  <button data-count="25">25명 이하</button>
-  <button id="startBtn" disabled>선택 후 시작</button>
-</div>
+  <script>
+    const touches = {};
+    let gameStarted = false;
+    let checkIdleTimeout = null;
+    let totalPlayers = 0;
+    let remainingPlayers = [];
+    let finalists = [];
+    let round = 1;
+    const maxGroup = 5;
 
-<div id="message">참가 인원을 선택하세요</div>
-<div id="leagueBoard" style="display:none;">
-  <h3>당첨자 리그</h3>
-  <ul id="winnerList"></ul>
-</div>
-
-<script>
-  // --- 전역 상태 ---
-  let totalPlayers = 0;
-  let remainingPlayers = [];
-  let finalists = [];
-  let round = 0;
-  const maxGroup = 5;
-  let gameStarted = false;
-  let touches = {};
-  let idleTimeout = null;
-
-  // --- DOM ---
-  const overlay = document.getElementById('overlay');
-  const buttons = Array.from(overlay.querySelectorAll('button[data-count]'));
-  const startBtn = document.getElementById('startBtn');
-  const message = document.getElementById('message');
-  const leagueBoard = document.getElementById('leagueBoard');
-  const winnerList = document.getElementById('winnerList');
-
-  // --- 상태 변수 ---
-  let selectedCount = 0;
-
-  // --- 유틸 ---
-  function getRandomColor() {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for(let i=0; i<6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
+    function getRandomColor() {
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) color += letters[Math.floor(Math.random() * 16)];
+      return color;
     }
-    return color;
-  }
-  // 색상 밝기에 따라 글자색 흰/검정 조절
-  function getContrastColor(hexColor){
-    if (!hexColor) return 'white';
-    let c = hexColor.substring(1); // remove #
-    let rgb = parseInt(c, 16);
-    let r = (rgb >> 16) & 0xff;
-    let g = (rgb >> 8) & 0xff;
-    let b = rgb & 0xff;
-    // https://www.w3.org/TR/AERT/#color-contrast
-    let brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    return brightness > 125 ? 'black' : 'white';
-  }
 
-  // --- 버튼 선택 처리 ---
-  buttons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      buttons.forEach(b => b.style.borderColor = '#00ffff');
-      btn.style.borderColor = '#ff00ff';
-      selectedCount = parseInt(btn.dataset.count);
-      if(selectedCount <= 5){
-        startBtn.textContent = '시작';
-      } else {
-        startBtn.textContent = '리그 시작';
-      }
-      startBtn.disabled = false;
-    });
-  });
-
-  // --- 시작 버튼 클릭 ---
-  startBtn.addEventListener('click', () => {
-    if(selectedCount < 1) return;
-    startLeague(selectedCount);
-  });
-
-  // --- 메시지 출력 (직전 메시지 기억X) ---
-  function updateMessage(text) {
-    if(typeof text === 'function') {
-      // 이전 메시지 이어붙이기 방지
-      message.textContent = text('');
-    } else {
-      message.textContent = text;
+    function createCircle(id, x, y, number, color) {
+      const circle = document.createElement('div');
+      circle.classList.add('circle');
+      circle.style.left = `${x - 50}px`;
+      circle.style.top = `${y - 50}px`;
+      circle.style.backgroundColor = color;
+      circle.dataset.id = id;
+      circle.textContent = number;
+      document.body.appendChild(circle);
+      return circle;
     }
-  }
 
-  // --- 원 생성 ---
-  function createCircle(id, x, y, number, color) {
-    const c = document.createElement('div');
-    c.classList.add('circle');
-    c.style.left = (x - 50) + 'px';
-    c.style.top = (y - 50) + 'px';
-    c.style.backgroundColor = color;
-    c.dataset.id = id;
-    c.dataset.number = number;
-
-    // 가운데 큰 숫자 (원안)
-    c.textContent = number;
-
-    // 바깥쪽 작은 숫자
-    const numOutside = document.createElement('div');
-    numOutside.classList.add('num-outside');
-    numOutside.textContent = number;
-    c.appendChild(numOutside);
-
-    // 텍스트 색상 대비 맞추기
-    const textColor = getContrastColor(color);
-    c.style.color = textColor;
-    numOutside.style.color = textColor;
-
-    // 원 커졌다 작아졌다 펄스 애니메이션 추가 (라운드 시작 전용)
-    c.classList.add('pulse');
-
-    document.body.appendChild(c);
-    return c;
-  }
-
-  // --- 원 크기 애니메이션 재생 ---
-  function pulseCircles() {
-    const circles = document.querySelectorAll('.circle');
-    circles.forEach(c => {
-      c.classList.add('pulse');
-    });
-  }
-  // --- 원 크기 애니메이션 정지 ---
-  function stopPulseCircles() {
-    const circles = document.querySelectorAll('.circle');
-    circles.forEach(c => {
-      c.classList.remove('pulse');
-    });
-  }
-
-  // --- 원 위치 초기화 ---
-  function resetCirclesPosition() {
-    const circles = document.querySelectorAll('.circle');
-    const gap = 15;
-    let cols = Math.min(5, circles.length);
-    let rows = Math.ceil(circles.length / cols);
-
-    const totalWidth = window.innerWidth;
-    const totalHeight = window.innerHeight;
-    const size = 100;
-
-    circles.forEach((c,i) => {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
-      const left = gap + col * (size + gap);
-      const top = window.innerHeight/2 - (rows * (size + gap))/2 + row * (size + gap);
-      c.style.left = left + 'px';
-      c.style.top = top + 'px';
-    });
-  }
-
-  // --- 터치 / 마우스 드래그 이벤트 처리 ---
-  function setupDrag(circle) {
-    let pos = {x: 0, y: 0};
-    let origin = {x: 0, y: 0};
-    let dragging = false;
-    let id = circle.dataset.id;
-
-    function onPointerDown(e) {
-      if(!gameStarted) return; // 시작 전엔 드래그 막기
-      e.preventDefault();
-      dragging = true;
-      origin.x = e.clientX;
-      origin.y = e.clientY;
-      pos.x = parseFloat(circle.style.left);
-      pos.y = parseFloat(circle.style.top);
-      circle.style.cursor = 'grabbing';
-      touches[id] = circle;
+    function removeCircle(id) {
+      const el = document.querySelector(`.circle[data-id='${id}']`);
+      if (el) el.remove();
     }
-    function onPointerMove(e) {
-      if(!dragging) return;
-      e.preventDefault();
-      const dx = e.clientX - origin.x;
-      const dy = e.clientY - origin.y;
-      circle.style.left = (pos.x + dx) + 'px';
-      circle.style.top = (pos.y + dy) + 'px';
-    }
-    function onPointerUp(e) {
-      if(!dragging) return;
-      dragging = false;
-      circle.style.cursor = 'grab';
-      // 이동 완료 후 위치 체크
-      checkInsideCircle(circle);
-      delete touches[id];
-    }
-    circle.addEventListener('pointerdown', onPointerDown);
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-  }
 
-  // --- 원이 중앙 원 안에 있는지 체크 ---
-  function checkInsideCircle(circle) {
-    if(!gameStarted) return;
-
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
-    const radius = 150;
-
-    const cX = parseFloat(circle.style.left) + 50;
-    const cY = parseFloat(circle.style.top) + 50;
-
-    const dist = Math.sqrt((centerX - cX) ** 2 + (centerY - cY) ** 2);
-
-    // 참가자 번호에 따라 기준 조금씩 다름(원 밖에 번호 보이도록 했으니까)
-    // if(dist <= radius) 당첨
-
-    if(dist <= radius) {
-      // 당첨 처리
-      // 제거 안 하고 색 바꿔서 표시
-      circle.style.boxShadow = '0 0 20px 4px #00ff00cc inset';
-      circle.style.backgroundColor = '#007700';
-      circle.style.color = 'white';
-      circle.classList.remove('pulse');
-      // 당첨자 목록에 추가
-      if(!finalists.includes(circle.dataset.number)) {
-        finalists.push(circle.dataset.number);
-        updateLeagueBoard();
-      }
-    } else {
-      // 탈락
-      circle.style.boxShadow = '';
-      circle.style.backgroundColor = '#222';
-      circle.style.color = getContrastColor('#222');
-      // 제거 목록에서 제거
-      const idx = finalists.indexOf(circle.dataset.number);
-      if(idx >= 0) {
-        finalists.splice(idx, 1);
-        updateLeagueBoard();
+    function updateCirclePosition(id, x, y) {
+      const el = document.querySelector(`.circle[data-id='${id}']`);
+      if (el) {
+        el.style.left = `${x - 50}px`;
+        el.style.top = `${y - 50}px`;
       }
     }
-  }
 
-  // --- 당첨자 리스트 업데이트 ---
-  function updateLeagueBoard() {
-    winnerList.innerHTML = '';
-    finalists.forEach(num => {
-      const li = document.createElement('li');
-      const box = document.createElement('div');
-      box.classList.add('color-box');
-      box.style.backgroundColor = '#00ff00';
-      li.appendChild(box);
-      li.appendChild(document.createTextNode('참가 #' + num));
-      winnerList.appendChild(li);
-    });
-  }
-
-  // --- 라운드 진행 ---
-  function startLeague(count) {
-    if(gameStarted) return;
-    gameStarted = true;
-    totalPlayers = count;
-    remainingPlayers = [];
-    finalists = [];
-    round = 1;
-
-    overlay.style.display = 'none';
-    leagueBoard.style.display = 'block';
-
-    // 참가자 생성
-    for(let i=1; i<=totalPlayers; i++) {
-      remainingPlayers.push(i);
+    function updateMessage(msg, visible = true) {
+      const el = document.getElementById('message');
+      el.textContent = msg;
+      el.style.display = visible ? 'block' : 'none';
     }
 
-    createParticipants(remainingPlayers);
-    pulseCircles();
-
-    // 라운드 시작 전 안내 메시지 및 애니메이션 (3초)
-    updateMessage('라운드 ' + round + ' 시작 준비 중...');
-    setTimeout(() => {
-      stopPulseCircles();
-      updateMessage('라운드 ' + round + ' 시작! 드래그로 원 안에 위치시키세요.');
-      // 드래그 활성화
-      enableDrag(true);
-
-      // 일정 시간 후 라운드 종료 처리 (20초)
-      setTimeout(() => {
-        enableDrag(false);
-        endRound();
-      }, 20000);
-    }, 3000);
-  }
-
-  // --- 참가자 원 생성 ---
-  function createParticipants(arr) {
-    // 기존 원 제거
-    const olds = document.querySelectorAll('.circle');
-    olds.forEach(o => o.remove());
-
-    arr.forEach((num, idx) => {
-      const color = getRandomColor();
-      // 화면 중앙 근처 배치
-      const x = window.innerWidth / 2 + (idx % 5) * 110 - 220;
-      const y = window.innerHeight / 2 + Math.floor(idx / 5) * 110 - 110;
-      const circle = createCircle(num, x, y, num, color);
-      setupDrag(circle);
-    });
-  }
-
-  // --- 드래그 활성화/비활성화 ---
-  function enableDrag(enabled) {
-    const circles = document.querySelectorAll('.circle');
-    circles.forEach(c => {
-      if(enabled) {
-        c.style.pointerEvents = 'auto';
-        c.style.cursor = 'grab';
-      } else {
-        c.style.pointerEvents = 'none';
-        c.style.cursor = 'default';
-      }
-    });
-  }
-
-  // --- 라운드 종료 처리 ---
-  function endRound() {
-    updateMessage('라운드 ' + round + ' 종료. 당첨자: ' + finalists.join(', '));
-    round++;
-
-    // 남은 참가자 갱신 (당첨자만 다음 라운드)
-    remainingPlayers = finalists.slice();
-
-    // 결승 처리 및 라운드별 인원 조정 로직
-    if(remainingPlayers.length <= maxGroup) {
-      // 최종 라운드 (최대 5명 이하)
-      updateMessage('결승 라운드 진입! 참가자: ' + remainingPlayers.join(', '));
-      // 결승 진행 (20초 드래그)
-      createParticipants(remainingPlayers);
-      pulseCircles();
-
-      setTimeout(() => {
-        stopPulseCircles();
-        updateMessage('결승 시작! 드래그하세요!');
-        enableDrag(true);
-
-        setTimeout(() => {
-          enableDrag(false);
-          updateMessage('게임 종료! 최종 당첨자: ' + remainingPlayers.join(', '));
-          // 게임 종료, 다시 시작 가능
-          resetGame();
-        }, 20000);
-      }, 3000);
-
-    } else {
-      // 다음 라운드 진행 (인원이 너무 많으면 최대 10명 이하 조정)
-      if(remainingPlayers.length > selectedCount) {
-        // 인원 감소 조절
-        remainingPlayers = remainingPlayers.slice(0, selectedCount);
-      }
-
-      updateMessage('다음 라운드 시작 준비 중...');
-      createParticipants(remainingPlayers);
-      pulseCircles();
-
-      setTimeout(() => {
-        stopPulseCircles();
-        updateMessage('라운드 ' + round + ' 시작! 드래그하세요!');
-        enableDrag(true);
-
-        setTimeout(() => {
-          enableDrag(false);
-          endRound();
-        }, 20000);
-      }, 3000);
+    function startLeague() {
+      totalPlayers = parseInt(document.getElementById('playerCount').value);
+      remainingPlayers = Array.from({ length: totalPlayers }, (_, i) => i + 1);
+      finalists = [];
+      round = 1;
+      document.getElementById('config').style.display = 'none';
+      updateMessage(`${totalPlayers === 5 ? '🔥 결승전' : `${round}라운드`}: 손가락을 올려주세요 (최대 ${maxGroup}명)`, true);
     }
-  }
 
-  // --- 게임 초기화 ---
-  function resetGame() {
-    gameStarted = false;
-    finalists = [];
-    remainingPlayers = [];
-    round = 0;
-    selectedCount = 0;
+    function startGame() {
+      gameStarted = true;
+      updateMessage(`🎮 게임 시작! ${round}라운드 랜덤 탈락 중...`, true);
+      navigator.vibrate && navigator.vibrate([300, 100, 300]);
 
-    winnerList.innerHTML = '';
-    overlay.style.display = 'flex';
-    leagueBoard.style.display = 'none';
+      const ids = Object.keys(touches);
 
-    buttons.forEach(b => b.style.borderColor = '#00ffff');
-    startBtn.disabled = true;
-    startBtn.textContent = '선택 후 시작';
-    updateMessage('참가 인원을 선택하세요');
+      const interval = setInterval(() => {
+        if (ids.length <= 1) {
+          clearInterval(interval);
+          const winnerId = ids[0];
+          const winner = touches[winnerId];
+          updateMessage(`🎯 ${winner.number}번 (${winner.color}) 생존!`, true);
+          finalists.push({ number: winner.number, color: winner.color });
+          gameStarted = false;
 
-    // 기존 원 제거
-    const olds = document.querySelectorAll('.circle');
-    olds.forEach(o => o.remove());
-  }
+          Object.keys(touches).forEach(removeCircle);
+          for (let id in touches) delete touches[id];
 
-  // --- 윈도우 리사이즈 시 위치 재조정 ---
-  window.addEventListener('resize', () => {
-    if(!gameStarted) return;
-    resetCirclesPosition();
-  });
+          if (remainingPlayers.length > 0) {
+            round++;
+            setTimeout(() => {
+              updateMessage(`${round}라운드: 손가락을 올려주세요 (최대 ${maxGroup}명)`);
+            }, 2000);
+          } else if (finalists.length > 1) {
+            remainingPlayers = finalists.map(f => f.number);
+            finalists = [];
+            round = '🔥 결승전';
+            setTimeout(() => {
+              updateMessage(`${round}: 손가락을 올려주세요 (최대 ${maxGroup}명)`);
+            }, 2000);
+          } else {
+            updateMessage(`🏆 최종 우승자: ${finalists[0].number}번 (${finalists[0].color})!`);
+            waitForReset();
+          }
+          return;
+        }
 
-</script>
+        const randomIndex = Math.floor(Math.random() * ids.length);
+        const removedId = ids.splice(randomIndex, 1)[0];
+        removeCircle(removedId);
+      }, 1500);
+    }
 
+    function waitForReset() {
+      const msg = document.getElementById('message');
+      msg.textContent += '\n👉 터치하면 다시 시작합니다';
+      msg.style.cursor = 'pointer';
+      msg.addEventListener('click', () => {
+        msg.style.cursor = 'default';
+        msg.removeEventListener('click', waitForReset);
+        resetGame();
+      }, { once: true });
+    }
+
+    function resetGame() {
+      document.getElementById('config').style.display = 'block';
+      updateMessage('참가 인원을 선택하고 시작하세요');
+      for (let id in touches) removeCircle(id);
+      for (let id in touches) delete touches[id];
+      gameStarted = false;
+      totalPlayers = 0;
+      remainingPlayers = [];
+      finalists = [];
+      round = 1;
+    }
+
+    function checkIfIdle() {
+      if (Object.keys(touches).length >= 2) {
+        if (checkIdleTimeout) clearTimeout(checkIdleTimeout);
+        checkIdleTimeout = setTimeout(() => {
+          if (!gameStarted) {
+            startGame();
+          }
+        }, 3000);
+      }
+    }
+
+    window.addEventListener('touchstart', (e) => {
+      if (gameStarted) return;
+      updateMessage('', false); // 터치하면 메시지 숨김
+      for (const t of e.changedTouches) {
+        if (Object.keys(touches).length >= maxGroup) return;
+        if (!touches[t.identifier]) {
+          const number = remainingPlayers.shift();
+          if (!number) return;
+          const color = getRandomColor();
+          const circle = createCircle(t.identifier, t.clientX, t.clientY, number, color);
+          touches[t.identifier] = { el: circle, number, color };
+        }
+      }
+      checkIfIdle();
+    });
+
+    window.addEventListener('touchmove', (e) => {
+      if (gameStarted) return;
+      for (const t of e.changedTouches) {
+        if (touches[t.identifier]) updateCirclePosition(t.identifier, t.clientX, t.clientY);
+      }
+    });
+
+    window.addEventListener('touchend', (e) => {
+      if (gameStarted) return;
+      for (const t of e.changedTouches) {
+        if (touches[t.identifier]) {
+          removeCircle(t.identifier);
+          remainingPlayers.unshift(touches[t.identifier].number);
+          delete touches[t.identifier];
+        }
+      }
+      updateMessage(`${round}라운드: 손가락을 올려주세요 (최대 ${maxGroup}명)`);
+    });
+
+    document.addEventListener('gesturestart', e => e.preventDefault());
+    document.addEventListener('gesturechange', e => e.preventDefault());
+    document.addEventListener('gestureend', e => e.preventDefault());
+    document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+  </script>
 </body>
 </html>
