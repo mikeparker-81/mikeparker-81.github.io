@@ -137,18 +137,15 @@
 
     #message {
       position: absolute;
-      bottom: 30px;
+      bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
       color: #00ffff;
-      font-size: 24px;
-      background-color: rgba(0, 0, 0, 0.6);
-      padding: 10px 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px #00ffff55;
-      z-index: 9999;
+      font-size: 18px;
       text-align: center;
-      max-width: 80%;
+      z-index: 9999;
+      max-width: 90%;
+      padding: 8px 0;
     }
 
     .next-button {
@@ -250,16 +247,29 @@
     let round = 1;
     const maxGroup = 5;
 
-    // 다음 라운드 최소 인원을 확인하는 함수
+    // 다음 라운드 최소 인원을 확인하는 함수 (결승전 제외)
     function getMinParticipants(remainingCount) {
-      if (remainingCount <= 5) return remainingCount; // 결승전
+      if (remainingCount <= 5) return remainingCount; // 결승전이면 남은 인원 모두
       
-      // 다음 라운드에서 최소 2명이 남도록 계산
+      // 다음 라운드가 결승전인지 확인
+      const afterThisRound = remainingCount - 1; // 이번 라운드 후 남을 인원 (1명 생존)
+      if (afterThisRound <= 5) {
+        // 다음이 결승전이면 최소 2명이 결승전에 가야 함
+        return Math.max(2, remainingCount - 3); // 최대 3명까지 탈락 가능
+      }
+      
+      // 일반 라운드: 다음 라운드에서 최소 2명이 남도록 계산
       let minNeeded = 2;
-      while (remainingCount - minNeeded < 2) {
+      const nextRoundRemaining = remainingCount - 1;
+      while (nextRoundRemaining - minNeeded < 2) {
         minNeeded++;
       }
       return Math.min(minNeeded, maxGroup, remainingCount);
+    }
+
+    // 결승전 여부 확인
+    function isFinalRound(remainingCount) {
+      return remainingCount <= 5;
     }
 
     // 경고 메시지 표시
@@ -338,7 +348,7 @@
       display.innerHTML = '<div style="font-weight: bold; margin-bottom: 8px; color: #00ffff;">생존자 기록</div>';
       
       allSurvivors.forEach((survivor, index) => {
-        const roundLabel = survivor.round === '🔥 결승전' ? '결승전' : `${survivor.round}라운드`;
+        const roundLabel = survivor.round === '결승전' ? '결승전' : `${survivor.round}라운드`;
         const colorName = getColorName(survivor.color);
         const item = document.createElement('div');
         item.className = 'winner-item';
@@ -367,15 +377,19 @@
       document.getElementById('config').style.display = 'none';
       document.getElementById('results-table').style.display = 'none';
       
-      const minParticipants = getMinParticipants(remainingPlayers.length);
-      const roundLabel = totalPlayers <= 5 ? '🔥 결승전' : `${round}라운드`;
-      updateMessage(`${roundLabel}: 손가락을 올려주세요 (${minParticipants}명 필요)`, false);
+      if (isFinalRound(remainingPlayers.length)) {
+        updateMessage(`결승전: 손가락을 올려주세요 (${remainingPlayers.length}명)`, false);
+      } else {
+        const minParticipants = getMinParticipants(remainingPlayers.length);
+        updateMessage(`${round}라운드: 손가락을 올려주세요 (${minParticipants}명 필요)`, false);
+      }
       updateWinnersDisplay();
     }
 
     function startGame() {
       gameStarted = true;
-      updateMessage(`🎮 게임 시작! ${round}라운드 랜덤 탈락 중...`, false);
+      const currentRoundLabel = round === '결승전' ? '결승전' : `${round}라운드`;
+      updateMessage(`게임 시작! ${currentRoundLabel} 랜덤 탈락 중...`, false);
       navigator.vibrate && navigator.vibrate([300, 100, 300]);
 
       const ids = Object.keys(touches);
@@ -411,7 +425,7 @@
 
           // 당첨자를 색상과 함께 표시
           updateMessage(
-            `🎯 <span style="color: ${winner.color}; font-weight: bold;">${winner.number}번 (${colorName})</span> 생존!`, 
+            `<span style="color: ${winner.color}; font-weight: bold;">${winner.number}번 (${colorName})</span> 생존!`, 
             true, 
             remainingPlayers.length > 1 ? '다음 라운드' : '결과 보기'
           );
@@ -434,14 +448,14 @@
       waitingForNext = false;
 
       if (remainingPlayers.length > 1) {
-        if (remainingPlayers.length <= 5) {
-          round = '🔥 결승전';
+        if (isFinalRound(remainingPlayers.length)) {
+          round = '결승전';
+          updateMessage(`${round}: 손가락을 올려주세요 (${remainingPlayers.length}명)`, false);
         } else {
           round++;
+          const minParticipants = getMinParticipants(remainingPlayers.length);
+          updateMessage(`${round}라운드: 손가락을 올려주세요 (${minParticipants}명 필요)`, false);
         }
-        const minParticipants = getMinParticipants(remainingPlayers.length);
-        const roundLabel = round === '🔥 결승전' ? '🔥 결승전' : `${round}라운드`;
-        updateMessage(`${roundLabel}: 손가락을 올려주세요 (${minParticipants}명 필요)`, false);
       } else {
         showFinalResults();
       }
@@ -463,7 +477,7 @@
       const survivorsList = document.getElementById('survivors-list');
       survivorsList.innerHTML = '';
       allSurvivors.forEach(survivor => {
-        const roundLabel = survivor.round === '🔥 결승전' ? '결승전' : `${survivor.round}라운드`;
+        const roundLabel = survivor.round === '결승전' ? '결승전' : `${survivor.round}라운드`;
         const colorName = getColorName(survivor.color);
         const item = document.createElement('div');
         item.className = 'player-item';
@@ -478,7 +492,7 @@
       const eliminatedList = document.getElementById('eliminated-list');
       eliminatedList.innerHTML = '';
       eliminatedPlayers.forEach(eliminated => {
-        const roundLabel = eliminated.round === '🔥 결승전' ? '결승전' : `${eliminated.round}라운드`;
+        const roundLabel = eliminated.round === '결승전' ? '결승전' : `${eliminated.round}라운드`;
         const colorName = getColorName(eliminated.color);
         const item = document.createElement('div');
         item.className = 'player-item';
@@ -512,9 +526,16 @@
 
     function checkIfIdle() {
       const currentParticipants = Object.keys(touches).length;
-      const minParticipants = getMinParticipants(remainingPlayers.length + currentParticipants);
+      const totalRemaining = remainingPlayers.length + currentParticipants;
       
-      if (currentParticipants >= minParticipants) {
+      let minNeeded;
+      if (isFinalRound(totalRemaining)) {
+        minNeeded = totalRemaining; // 결승전은 모든 인원 참여
+      } else {
+        minNeeded = getMinParticipants(totalRemaining);
+      }
+      
+      if (currentParticipants >= minNeeded) {
         if (checkIdleTimeout) clearTimeout(checkIdleTimeout);
         checkIdleTimeout = setTimeout(() => {
           if (!gameStarted && !waitingForNext) {
@@ -529,27 +550,50 @@
       
       const currentParticipants = Object.keys(touches).length;
       const totalRemaining = remainingPlayers.length + currentParticipants;
-      const minParticipants = getMinParticipants(totalRemaining);
-      const maxAllowed = Math.min(maxGroup, remainingPlayers.length);
       
-      updateMessage('', false);
-      
-      for (const t of e.changedTouches) {
-        if (currentParticipants >= maxAllowed) {
-          if (currentParticipants < minParticipants) {
-            showWarning(`다음 라운드 최소 인원을 만족하지 못합니다! (${minParticipants}명 필요)`);
-          }
-          return;
-        }
+      // 결승전인지 확인
+      if (isFinalRound(totalRemaining)) {
+        // 결승전: 모든 인원 참여해야 함
+        const maxAllowed = remainingPlayers.length;
         
-        if (!touches[t.identifier]) {
-          const number = remainingPlayers.shift();
-          if (!number) return;
-          const color = getRandomColor();
-          const circle = createCircle(t.identifier, t.clientX, t.clientY, number, color);
-          touches[t.identifier] = { el: circle, number, color };
+        updateMessage('', false);
+        
+        for (const t of e.changedTouches) {
+          if (currentParticipants >= maxAllowed) return;
+          
+          if (!touches[t.identifier]) {
+            const number = remainingPlayers.shift();
+            if (!number) return;
+            const color = getRandomColor();
+            const circle = createCircle(t.identifier, t.clientX, t.clientY, number, color);
+            touches[t.identifier] = { el: circle, number, color };
+          }
+        }
+      } else {
+        // 일반 라운드: 최소 인원 체크
+        const minParticipants = getMinParticipants(totalRemaining);
+        const maxAllowed = Math.min(maxGroup, remainingPlayers.length);
+        
+        updateMessage('', false);
+        
+        for (const t of e.changedTouches) {
+          if (currentParticipants >= maxAllowed) {
+            if (currentParticipants < minParticipants) {
+              showWarning(`다음 라운드 최소 인원을 만족하지 못합니다! (${minParticipants}명 필요)`);
+            }
+            return;
+          }
+          
+          if (!touches[t.identifier]) {
+            const number = remainingPlayers.shift();
+            if (!number) return;
+            const color = getRandomColor();
+            const circle = createCircle(t.identifier, t.clientX, t.clientY, number, color);
+            touches[t.identifier] = { el: circle, number, color };
+          }
         }
       }
+      
       checkIfIdle();
     });
 
@@ -572,10 +616,13 @@
       
       const currentParticipants = Object.keys(touches).length;
       const totalRemaining = remainingPlayers.length + currentParticipants;
-      const minParticipants = getMinParticipants(totalRemaining);
-      const currentRoundLabel = round === '🔥 결승전' ? '🔥 결승전' : `${round}라운드`;
       
-      updateMessage(`${currentRoundLabel}: 손가락을 올려주세요 (${minParticipants}명 필요)`, false);
+      if (isFinalRound(totalRemaining)) {
+        updateMessage(`결승전: 손가락을 올려주세요 (${remainingPlayers.length}명)`, false);
+      } else {
+        const minParticipants = getMinParticipants(totalRemaining);
+        updateMessage(`${round}라운드: 손가락을 올려주세요 (${minParticipants}명 필요)`, false);
+      }
     });
 
     document.addEventListener('gesturestart', e => e.preventDefault());
