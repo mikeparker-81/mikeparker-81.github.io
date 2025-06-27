@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
-  <title>터치 생존 게임</title>
+  <title>터치 생존 리그 게임</title>
   <style>
     body, html {
       margin: 0;
@@ -11,6 +11,16 @@
       overflow: hidden;
       touch-action: none;
       background-color: #111;
+    }
+    #config {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 18px;
+      font-family: sans-serif;
+      z-index: 9999;
     }
     .circle {
       position: absolute;
@@ -21,6 +31,12 @@
       transform: scale(1);
       animation: pulse 1s infinite;
       pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: bold;
+      color: white;
     }
     @keyframes pulse {
       0% { transform: scale(1); }
@@ -29,7 +45,7 @@
     }
     #message {
       position: absolute;
-      top: 20px;
+      bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
       color: white;
@@ -40,19 +56,37 @@
   </style>
 </head>
 <body>
-  <div id="message">2~5명 손가락을 동시에 올려주세요</div>
+  <div id="config">
+    <label for="playerCount">참가 인원:</label>
+    <select id="playerCount">
+      <option value="5">5명</option>
+      <option value="10">10명</option>
+      <option value="15">15명</option>
+      <option value="20">20명</option>
+      <option value="25">25명</option>
+    </select>
+    <button onclick="startLeague()">리그 시작</button>
+  </div>
+  <div id="message">참가 인원을 선택하고 시작하세요</div>
 
   <script>
     const touches = {};
     let gameStarted = false;
     let checkIdleTimeout = null;
+    let totalPlayers = 0;
+    let remainingPlayers = [];
+    let finalists = [];
+    let currentGroup = [];
+    let round = 1;
+    let currentIdCounter = 1;
 
-    function createCircle(id, x, y) {
+    function createCircle(id, x, y, number) {
       const circle = document.createElement('div');
       circle.classList.add('circle');
       circle.style.left = `${x - 50}px`;
       circle.style.top = `${y - 50}px`;
       circle.dataset.id = id;
+      circle.textContent = number;
       document.body.appendChild(circle);
       return circle;
     }
@@ -74,17 +108,53 @@
       document.getElementById('message').textContent = msg;
     }
 
-    function startGame() {
-      gameStarted = true;
-      updateMessage('게임 시작! 랜덤 탈락 중...');
-      navigator.vibrate && navigator.vibrate([300, 100, 300]);
+    function startLeague() {
+      totalPlayers = parseInt(document.getElementById('playerCount').value);
+      remainingPlayers = Array.from({ length: totalPlayers }, (_, i) => i + 1);
+      finalists = [];
+      round = 1;
+      currentIdCounter = 1;
+      updateMessage(`${round}라운드: 손가락을 올려주세요 (최대 5명)`);
+    }
 
-      let ids = Object.keys(touches);
+    function startGame(group) {
+      gameStarted = true;
+      updateMessage(`게임 시작! ${round}라운드 랜덤 탈락 중...`);
+      navigator.vibrate && navigator.vibrate([300, 100, 300]);
+      const ids = Object.keys(touches);
 
       const interval = setInterval(() => {
         if (ids.length <= 1) {
           clearInterval(interval);
-          updateMessage(`🎯 걸린 사람: ${ids[0]}`);
+          const winnerId = ids[0];
+          const number = touches[winnerId].number;
+          updateMessage(`🎯 ${number}번 생존!`);
+          finalists.push(number);
+          gameStarted = false;
+
+          // 다음 라운드 진행 조건 확인
+          if (remainingPlayers.length > 0) {
+            round++;
+            Object.keys(touches).forEach(id => removeCircle(id));
+            for (let id in touches) delete touches[id];
+            currentIdCounter = 1;
+            setTimeout(() => {
+              updateMessage(`${round}라운드: 손가락을 올려주세요 (최대 5명)`);
+            }, 2000);
+          } else if (finalists.length === 1) {
+            updateMessage(`🏆 최종 우승자: ${finalists[0]}번!`);
+          } else {
+            // 결승전
+            remainingPlayers = [...finalists];
+            finalists = [];
+            round = '결승';
+            Object.keys(touches).forEach(id => removeCircle(id));
+            for (let id in touches) delete touches[id];
+            currentIdCounter = 1;
+            setTimeout(() => {
+              updateMessage(`🔥 결승전: 손가락을 올려주세요 (최대 5명)`);
+            }, 2000);
+          }
           return;
         }
         const randomIndex = Math.floor(Math.random() * ids.length);
@@ -97,7 +167,10 @@
       if (Object.keys(touches).length >= 2) {
         if (checkIdleTimeout) clearTimeout(checkIdleTimeout);
         checkIdleTimeout = setTimeout(() => {
-          if (!gameStarted) startGame();
+          if (!gameStarted) {
+            const group = Object.values(touches).map(t => t.number);
+            startGame(group);
+          }
         }, 3000);
       }
     }
@@ -107,7 +180,10 @@
       for (const t of e.changedTouches) {
         if (Object.keys(touches).length >= 5) return;
         if (!touches[t.identifier]) {
-          touches[t.identifier] = createCircle(t.identifier, t.clientX, t.clientY);
+          const number = remainingPlayers.shift();
+          if (!number) return;
+          const circle = createCircle(t.identifier, t.clientX, t.clientY, number);
+          touches[t.identifier] = { el: circle, number };
         }
       }
       checkIfIdle();
@@ -125,9 +201,12 @@
     window.addEventListener('touchend', (e) => {
       for (const t of e.changedTouches) {
         removeCircle(t.identifier);
-        delete touches[t.identifier];
+        if (touches[t.identifier]) {
+          remainingPlayers.unshift(touches[t.identifier].number);
+          delete touches[t.identifier];
+        }
       }
-      if (!gameStarted) updateMessage('2~5명 손가락을 동시에 올려주세요');
+      if (!gameStarted) updateMessage(`${round}라운드: 손가락을 올려주세요 (최대 5명)`);
     });
   </script>
 </body>
