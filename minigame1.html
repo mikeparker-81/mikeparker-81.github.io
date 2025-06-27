@@ -32,6 +32,10 @@
       box-shadow: 0 0 15px #00ffff55;
     }
 
+    #config.hidden {
+      display: none;
+    }
+
     #config select, #config button {
       margin: 10px;
       padding: 6px 10px;
@@ -75,6 +79,10 @@
       border-radius: 10px;
       box-shadow: 0 0 10px #00ffff55;
       z-index: 9999;
+    }
+
+    #message.hidden {
+      display: none;
     }
   </style>
 </head>
@@ -134,8 +142,10 @@
       }
     }
 
-    function updateMessage(msg) {
-      document.getElementById('message').textContent = msg;
+    function updateMessage(msg, hide = false) {
+      const message = document.getElementById('message');
+      message.textContent = msg;
+      message.classList.toggle('hidden', hide);
     }
 
     function startLeague() {
@@ -144,11 +154,20 @@
       finalists = [];
       round = 1;
       updateMessage(`${totalPlayers === 5 ? '🔥 결승전' : `${round}라운드`}: 손가락을 올려주세요 (최대 ${maxGroup}명)`);
+      document.getElementById('config').classList.add('hidden');
     }
 
-    function startGame(group) {
+    function resetGame() {
+      gameStarted = false;
+      Object.keys(touches).forEach(removeCircle);
+      for (let id in touches) delete touches[id];
+      document.getElementById('config').classList.remove('hidden');
+      updateMessage('참가 인원을 선택하고 시작하세요');
+    }
+
+    function startGame() {
       gameStarted = true;
-      updateMessage(`🎮 게임 시작! ${round}라운드 랜덤 탈락 중...`);
+      updateMessage(`🎮 게임 시작! ${round}라운드 랜덤 탈락 중...`, true);
       navigator.vibrate && navigator.vibrate([300, 100, 300]);
 
       const ids = Object.keys(touches);
@@ -160,15 +179,15 @@
           const winner = touches[winnerId];
           updateMessage(`🎯 ${winner.number}번 (${winner.color}) 생존!`);
           finalists.push({ number: winner.number, color: winner.color });
-          gameStarted = false;
-
-          if (finalists.length === 1 && totalPlayers === 5) {
-            updateMessage(`🏆 최종 우승자: ${finalists[0].number}번 (${finalists[0].color})!`);
-            return;
-          }
 
           Object.keys(touches).forEach(removeCircle);
           for (let id in touches) delete touches[id];
+
+          if (totalPlayers === 5) {
+            updateMessage(`🏆 최종 우승자: ${finalists[0].number}번 (${finalists[0].color})!\n화면을 터치하여 리셋`);
+            document.body.addEventListener('touchstart', resetGame, { once: true });
+            return;
+          }
 
           if (remainingPlayers.length > 0) {
             round++;
@@ -178,9 +197,8 @@
             finalists = [];
             round = '🔥 결승전';
             setTimeout(() => updateMessage(`${round}: 손가락을 올려주세요 (최대 ${maxGroup}명)`), 2000);
-          } else {
-            updateMessage(`🏆 최종 우승자: ${finalists[0].number}번 (${finalists[0].color})!`);
           }
+          gameStarted = false;
           return;
         }
 
@@ -194,15 +212,14 @@
       if (Object.keys(touches).length >= 2) {
         if (checkIdleTimeout) clearTimeout(checkIdleTimeout);
         checkIdleTimeout = setTimeout(() => {
-          if (!gameStarted) {
-            startGame();
-          }
+          if (!gameStarted) startGame();
         }, 3000);
       }
     }
 
     window.addEventListener('touchstart', (e) => {
       if (gameStarted) return;
+      document.getElementById('message').classList.add('hidden');
       for (const t of e.changedTouches) {
         if (Object.keys(touches).length >= maxGroup) return;
         if (!touches[t.identifier]) {
@@ -217,7 +234,6 @@
     });
 
     window.addEventListener('touchmove', (e) => {
-      if (gameStarted) return;
       for (const t of e.changedTouches) {
         if (touches[t.identifier]) updateCirclePosition(t.identifier, t.clientX, t.clientY);
       }
@@ -235,7 +251,6 @@
       updateMessage(`${round}라운드: 손가락을 올려주세요 (최대 ${maxGroup}명)`);
     });
 
-    // 스크롤, 더블탭 줌 방지
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('gesturechange', e => e.preventDefault());
     document.addEventListener('gestureend', e => e.preventDefault());
