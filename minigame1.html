@@ -1,271 +1,440 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1" />
-  <title>터치 생존 리그</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      touch-action: none;
-      background: linear-gradient(135deg, #0f0f0f, #1c1c1c);
-      font-family: 'Segoe UI', sans-serif;
-      -webkit-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1" />
+<title>터치 생존 리그 완전체</title>
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    height: 100%;
+    overflow: hidden;
+    background: linear-gradient(135deg, #0f0f0f, #1c1c1c);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    touch-action: none;
+  }
 
-    #config {
-      position: absolute;
-      top: 40px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: white;
-      font-size: 20px;
-      text-align: center;
-      z-index: 9999;
-      background-color: rgba(0, 0, 0, 0.6);
-      padding: 12px 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 15px #00ffff55;
-    }
+  #overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+  }
 
-    #config select, #config button {
-      margin: 10px;
-      padding: 6px 10px;
-      font-size: 16px;
-      border-radius: 6px;
-      border: none;
-    }
+  #playerButtons {
+    display: grid;
+    grid-template-columns: repeat(5, 72px);
+    grid-template-rows: repeat(2, 50px);
+    gap: 12px 20px;
+    margin-bottom: 30px;
+  }
 
-    .circle {
-      position: absolute;
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      transform: scale(1);
-      animation: pulse 1s infinite;
-      pointer-events: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 26px;
-      font-weight: bold;
-      color: white;
-      box-shadow: 0 0 10px rgba(255,255,255,0.5);
-    }
+  #playerButtons button {
+    background: #222;
+    border: 2px solid #00ffff;
+    border-radius: 10px;
+    color: #00ffff;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.3s, color 0.3s;
+  }
+  #playerButtons button.selected,
+  #playerButtons button:hover {
+    background: #00ffff;
+    color: #111;
+  }
 
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.3); }
-      100% { transform: scale(1); }
-    }
+  #startBtn {
+    background: #00cccc;
+    border: none;
+    border-radius: 14px;
+    color: #111;
+    font-size: 22px;
+    font-weight: 700;
+    padding: 14px 36px;
+    cursor: pointer;
+    user-select: none;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+  }
+  #startBtn.enabled {
+    opacity: 1;
+  }
 
-    #message {
-      position: absolute;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: #00ffff;
-      font-size: 24px;
-      background-color: rgba(0, 0, 0, 0.6);
-      padding: 10px 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px #00ffff55;
-      z-index: 9999;
-    }
-  </style>
+  .circle {
+    position: absolute;
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    box-shadow: 0 0 10px rgba(255,255,255,0.5);
+    color: white;
+    user-select: none;
+  }
+  .circle.mainNumber {
+    font-size: 26px;
+    text-shadow:
+      -1px -1px 1px #000,
+      1px 1px 1px #000;
+  }
+  .circle.outsideNumber {
+    position: absolute;
+    font-weight: 700;
+    font-size: 14px;
+    user-select: none;
+    pointer-events: none;
+    color: white;
+    text-shadow: 0 0 3px #000;
+  }
+
+  #messageBox {
+    position: fixed;
+    inset: 40% 0 0 0;
+    width: 100%;
+    text-align: center;
+    font-size: 36px;
+    font-weight: 700;
+    color: #00cccc;
+    background: #111;
+    padding: 30px 0;
+    user-select: none;
+    z-index: 9999;
+    box-shadow: 0 0 20px #00cccc88;
+    cursor: default;
+  }
+
+  #leagueBoard {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    max-width: 280px;
+    z-index: 9999;
+    background: rgba(0,0,0,0.6);
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 16px;
+    color: white;
+    font-weight: 600;
+    user-select: none;
+    box-shadow: 0 0 10px #00cccc99;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  #leagueBoard .entry {
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+  }
+  #leagueBoard .colorBox {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    border-radius: 4px;
+    border: 1.5px solid #ddd;
+  }
+
+</style>
 </head>
 <body>
-  <div id="config">
-    <label for="playerCount">참가 인원:</label>
-    <select id="playerCount">
-      <option value="5">5명</option>
-      <option value="10">10명</option>
-      <option value="15">15명</option>
-      <option value="20">20명</option>
-      <option value="25">25명</option>
-    </select>
-    <button onclick="startLeague()">리그 시작</button>
+
+<div id="overlay">
+  <div id="playerButtons">
+    <button data-count="5">5명</button>
+    <button data-count="10">10명</button>
+    <button data-count="15">15명</button>
+    <button data-count="20">20명</button>
+    <button data-count="25">25명</button>
   </div>
-  <div id="message">참가 인원을 선택하고 시작하세요</div>
+  <button id="startBtn" disabled>참가 인원 선택하세요</button>
+</div>
 
-  <script>
-    const touches = {};
-    let gameStarted = false;
-    let checkIdleTimeout = null;
-    let totalPlayers = 0;
-    let remainingPlayers = [];
-    let finalists = [];
-    let round = 1;
-    const maxGroup = 5;
+<div id="leagueBoard"></div>
 
-    function getRandomColor() {
-      const letters = '0123456789ABCDEF';
-      let color = '#';
-      for (let i = 0; i < 6; i++) color += letters[Math.floor(Math.random() * 16)];
-      return color;
-    }
+<div id="messageBox" style="display:none;"></div>
 
-    function createCircle(id, x, y, number, color) {
-      const circle = document.createElement('div');
-      circle.classList.add('circle');
+<script>
+  const maxGroup = 5;
+  const overlay = document.getElementById('overlay');
+  const playerButtons = document.querySelectorAll('#playerButtons button');
+  const startBtn = document.getElementById('startBtn');
+  const messageBox = document.getElementById('messageBox');
+  const leagueBoard = document.getElementById('leagueBoard');
+
+  let totalPlayers = 0;
+  let remainingPlayers = [];
+  let finalists = [];
+  let round = 1;
+  let gameStarted = false;
+  let touches = {};
+  let idleTimeout = null;
+
+  // 선택된 참가 인원 버튼 관리
+  let selectedCount = 0;
+  playerButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      playerButtons.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedCount = parseInt(btn.dataset.count);
+      startBtn.disabled = false;
+      startBtn.textContent = selectedCount >= 10 ? '리그 시작' : '시작';
+      startBtn.classList.add('enabled');
+    });
+  });
+
+  startBtn.addEventListener('click', () => {
+    if (!selectedCount) return;
+    totalPlayers = selectedCount;
+    remainingPlayers = Array.from({ length: totalPlayers }, (_, i) => i + 1);
+    finalists = [];
+    round = 1;
+    gameStarted = false;
+    touches = {};
+    leagueBoard.innerHTML = '';
+    overlay.style.display = 'none';
+    showRoundMessage(`${round}라운드: 손가락을 올려주세요 (최대 ${maxGroup}명)`);
+  });
+
+  function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) color += letters[Math.floor(Math.random() * 16)];
+    return color;
+  }
+
+  // 참가자 터치 시 원 생성 및 번호 표시
+  function createCircle(id, x, y, number, color) {
+    // 메인 원
+    const circle = document.createElement('div');
+    circle.classList.add('circle', 'mainNumber');
+    circle.style.left = `${x - 50}px`;
+    circle.style.top = `${y - 50}px`;
+    circle.style.backgroundColor = color;
+    circle.dataset.id = id;
+    circle.textContent = number;
+    document.body.appendChild(circle);
+
+    // 원 밖 작은 번호
+    const outsideNum = document.createElement('div');
+    outsideNum.classList.add('circle', 'outsideNumber');
+    outsideNum.dataset.id = id;
+    outsideNum.textContent = number;
+    outsideNum.style.color = color;
+    document.body.appendChild(outsideNum);
+
+    return {circle, outsideNum};
+  }
+
+  function updateCirclePosition(id, x, y) {
+    const circle = document.querySelector(`.circle.mainNumber[data-id='${id}']`);
+    const outsideNum = document.querySelector(`.circle.outsideNumber[data-id='${id}']`);
+    if (circle && outsideNum) {
       circle.style.left = `${x - 50}px`;
       circle.style.top = `${y - 50}px`;
-      circle.style.backgroundColor = color;
-      circle.dataset.id = id;
-      circle.textContent = number;
-      document.body.appendChild(circle);
-      return circle;
+      // 밖 번호 위치 (원 밖, 아래쪽 중앙으로 살짝 띄움)
+      outsideNum.style.left = `${x - 10}px`;
+      outsideNum.style.top = `${y + 55}px`;
+    }
+  }
+
+  function removeCircle(id) {
+    const circle = document.querySelector(`.circle.mainNumber[data-id='${id}']`);
+    const outsideNum = document.querySelector(`.circle.outsideNumber[data-id='${id}']`);
+    if (circle) circle.remove();
+    if (outsideNum) outsideNum.remove();
+  }
+
+  // 좌상단 리그 우승자 누적 표시
+  function addLeagueEntry(number, color) {
+    const entry = document.createElement('div');
+    entry.className = 'entry';
+    const colorBox = document.createElement('div');
+    colorBox.className = 'colorBox';
+    colorBox.style.backgroundColor = color;
+    const text = document.createElement('div');
+    text.textContent = `${number}번`;
+    text.style.color = color;
+    entry.appendChild(colorBox);
+    entry.appendChild(text);
+    leagueBoard.appendChild(entry);
+  }
+
+  // 메시지 중앙에 크게 보여주기, 터치 시 콜백 연결
+  function showRoundMessage(text, clickable=false, callback=null) {
+    messageBox.textContent = text;
+    messageBox.style.display = 'block';
+    messageBox.style.cursor = clickable ? 'pointer' : 'default';
+    if (clickable) {
+      const onClick = () => {
+        messageBox.style.display = 'none';
+        messageBox.style.cursor = 'default';
+        messageBox.removeEventListener('click', onClick);
+        if (callback) callback();
+      };
+      messageBox.addEventListener('click', onClick);
+    }
+  }
+
+  // 게임 시작 조건 체크 후 3초 후 게임 시작
+  function checkIfIdle() {
+    if (Object.keys(touches).length >= 2 && !gameStarted) {
+      if (idleTimeout) clearTimeout(idleTimeout);
+      idleTimeout = setTimeout(() => {
+        startGame();
+      }, 3000);
+    } else {
+      if (idleTimeout) clearTimeout(idleTimeout);
+    }
+  }
+
+  // 게임 메인 로직: 랜덤 탈락 반복
+  function startGame() {
+    gameStarted = true;
+    showRoundMessage(`${round}라운드 진행중... 잠시만 기다려주세요`);
+
+    const ids = Object.keys(touches);
+    if (ids.length === 0) {
+      // 터치자가 없으면 다시 대기
+      gameStarted = false;
+      showRoundMessage(`${round}라운드: 손가락을 올려주세요 (최대 ${maxGroup}명)`);
+      return;
     }
 
-    function removeCircle(id) {
-      const el = document.querySelector(`.circle[data-id='${id}']`);
-      if (el) el.remove();
-    }
-
-    function updateCirclePosition(id, x, y) {
-      const el = document.querySelector(`.circle[data-id='${id}']`);
-      if (el) {
-        el.style.left = `${x - 50}px`;
-        el.style.top = `${y - 50}px`;
-      }
-    }
-
-    function updateMessage(msg, visible = true) {
-      const el = document.getElementById('message');
-      el.textContent = msg;
-      el.style.display = visible ? 'block' : 'none';
-    }
-
-    function startLeague() {
-      totalPlayers = parseInt(document.getElementById('playerCount').value);
-      remainingPlayers = Array.from({ length: totalPlayers }, (_, i) => i + 1);
-      finalists = [];
-      round = 1;
-      document.getElementById('config').style.display = 'none';
-      updateMessage(`${totalPlayers === 5 ? '🔥 결승전' : `${round}라운드`}: 손가락을 올려주세요 (최대 ${maxGroup}명)`, true);
-    }
-
-    function startGame() {
-      gameStarted = true;
-      updateMessage(`🎮 게임 시작! ${round}라운드 랜덤 탈락 중...`, true);
-      navigator.vibrate && navigator.vibrate([300, 100, 300]);
-
-      const ids = Object.keys(touches);
-
-      const interval = setInterval(() => {
-        if (ids.length <= 1) {
-          clearInterval(interval);
-          const winnerId = ids[0];
-          const winner = touches[winnerId];
-          updateMessage(`🎯 ${winner.number}번 (${winner.color}) 생존!`, true);
-          finalists.push({ number: winner.number, color: winner.color });
-          gameStarted = false;
-
-          Object.keys(touches).forEach(removeCircle);
-          for (let id in touches) delete touches[id];
-
-          if (remainingPlayers.length > 0) {
-            round++;
-            setTimeout(() => {
-              updateMessage(`${round}라운드: 손가락을 올려주세요 (최대 ${maxGroup}명)`);
-            }, 2000);
-          } else if (finalists.length > 1) {
-            remainingPlayers = finalists.map(f => f.number);
-            finalists = [];
-            round = '🔥 결승전';
-            setTimeout(() => {
-              updateMessage(`${round}: 손가락을 올려주세요 (최대 ${maxGroup}명)`);
-            }, 2000);
-          } else {
-            updateMessage(`🏆 최종 우승자: ${finalists[0].number}번 (${finalists[0].color})!`);
-            waitForReset();
-          }
+    const eliminationInterval = setInterval(() => {
+      if (ids.length <= 1) {
+        clearInterval(eliminationInterval);
+        const winnerId = ids[0];
+        const winner = touches[winnerId];
+        if (!winner) {
+          showRoundMessage('참가자가 부족합니다. 다시 시작하세요.', true, resetGame);
           return;
         }
+        addLeagueEntry(winner.number, winner.color);
+        finalists.push({ number: winner.number, color: winner.color });
 
-        const randomIndex = Math.floor(Math.random() * ids.length);
-        const removedId = ids.splice(randomIndex, 1)[0];
-        removeCircle(removedId);
-      }, 1500);
-    }
-
-    function waitForReset() {
-      const msg = document.getElementById('message');
-      msg.textContent += '\n👉 터치하면 다시 시작합니다';
-      msg.style.cursor = 'pointer';
-      msg.addEventListener('click', () => {
-        msg.style.cursor = 'default';
-        msg.removeEventListener('click', waitForReset);
-        resetGame();
-      }, { once: true });
-    }
-
-    function resetGame() {
-      document.getElementById('config').style.display = 'block';
-      updateMessage('참가 인원을 선택하고 시작하세요');
-      for (let id in touches) removeCircle(id);
-      for (let id in touches) delete touches[id];
-      gameStarted = false;
-      totalPlayers = 0;
-      remainingPlayers = [];
-      finalists = [];
-      round = 1;
-    }
-
-    function checkIfIdle() {
-      if (Object.keys(touches).length >= 2) {
-        if (checkIdleTimeout) clearTimeout(checkIdleTimeout);
-        checkIdleTimeout = setTimeout(() => {
-          if (!gameStarted) {
-            startGame();
+        showRoundMessage(
+          `${round === '🔥 결승전' ? '결승전' : round + '라운드'} 당첨자: ` +
+          `%c${winner.number}번`,
+          true,
+          () => {
+            nextRoundOrFinish();
           }
-        }, 3000);
+        );
+
+        // 텍스트 색상 직접 적용
+        messageBox.innerHTML = `${round === '🔥 결승전' ? '결승전' : round + '라운드'} 당첨자: <span style="color:${winner.color}; font-weight:700;">${winner.number}번</span><br><small>터치하면 다음 진행</small>`;
+
+        gameStarted = false;
+
+        // 터치 원들 제거
+        Object.keys(touches).forEach(removeCircle);
+        touches = {};
+      } else {
+        // 랜덤 탈락 한명 제거
+        const removedIndex = Math.floor(Math.random() * ids.length);
+        const removedId = ids.splice(removedIndex, 1)[0];
+        removeCircle(removedId);
+        delete touches[removedId];
+      }
+    }, 1500);
+  }
+
+  // 다음 라운드 진행 또는 결승 시작/끝 처리
+  function nextRoundOrFinish() {
+    // 남은 플레이어가 있으면 라운드++
+    if (remainingPlayers.length > 0 && round !== '🔥 결승전') {
+      round++;
+      showRoundMessage(`${round}라운드: 손가락을 올려주세요 (최대 ${maxGroup}명)`);
+    } else if (finalists.length > 1) {
+      // 결승 시작
+      remainingPlayers = finalists.map(f => f.number);
+      finalists = [];
+      round = '🔥 결승전';
+      showRoundMessage(`${round}: 손가락을 올려주세요 (최대 ${maxGroup}명)`);
+    } else {
+      // 최종 우승자 발표
+      const champ = finalists[0];
+      showRoundMessage(
+        `🏆 최종 우승자: <span style="color:${champ.color}; font-weight:700;">${champ.number}번</span><br><small>터치하면 재시작</small>`,
+        true,
+        resetGame
+      );
+    }
+  }
+
+  // 게임 리셋 및 다시 인원 선택 화면 보여주기
+  function resetGame() {
+    overlay.style.display = 'flex';
+    startBtn.disabled = true;
+    startBtn.textContent = '참가 인원 선택하세요';
+    playerButtons.forEach(b => b.classList.remove('selected'));
+    leagueBoard.innerHTML = '';
+    messageBox.style.display = 'none';
+    totalPlayers = 0;
+    remainingPlayers = [];
+    finalists = [];
+    round = 1;
+    gameStarted = false;
+    touches = {};
+  }
+
+  // 터치 이벤트 관리
+  window.addEventListener('touchstart', e => {
+    if (gameStarted) return;
+    if (overlay.style.display === 'flex') return; // 시작 전 화면 터치 무시
+    // 메시지 숨기기
+    if (messageBox.style.display === 'block') {
+      messageBox.style.display = 'none';
+    }
+    for (const t of e.changedTouches) {
+      if (Object.keys(touches).length >= maxGroup) return;
+      if (!touches[t.identifier]) {
+        const number = remainingPlayers.shift();
+        if (!number) return;
+        const color = getRandomColor();
+        const {circle, outsideNum} = createCircle(t.identifier, t.clientX, t.clientY, number, color);
+        touches[t.identifier] = { el: circle, outsideNum, number, color };
       }
     }
+    checkIfIdle();
+  });
 
-    window.addEventListener('touchstart', (e) => {
-      if (gameStarted) return;
-      updateMessage('', false); // 터치하면 메시지 숨김
-      for (const t of e.changedTouches) {
-        if (Object.keys(touches).length >= maxGroup) return;
-        if (!touches[t.identifier]) {
-          const number = remainingPlayers.shift();
-          if (!number) return;
-          const color = getRandomColor();
-          const circle = createCircle(t.identifier, t.clientX, t.clientY, number, color);
-          touches[t.identifier] = { el: circle, number, color };
-        }
+  window.addEventListener('touchmove', e => {
+    if (gameStarted) return;
+    for (const t of e.changedTouches) {
+      if (touches[t.identifier]) updateCirclePosition(t.identifier, t.clientX, t.clientY);
+    }
+  });
+
+  window.addEventListener('touchend', e => {
+    if (gameStarted) return;
+    for (const t of e.changedTouches) {
+      if (touches[t.identifier]) {
+        removeCircle(t.identifier);
+        remainingPlayers.unshift(touches[t.identifier].number);
+        delete touches[t.identifier];
       }
-      checkIfIdle();
-    });
+    }
+    showRoundMessage(`${round}라운드: 손가락을 올려주세요 (최대 ${maxGroup}명)`);
+  });
 
-    window.addEventListener('touchmove', (e) => {
-      if (gameStarted) return;
-      for (const t of e.changedTouches) {
-        if (touches[t.identifier]) updateCirclePosition(t.identifier, t.clientX, t.clientY);
-      }
-    });
+  // 제스처 무효 처리
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(ev => {
+    document.addEventListener(ev, e => e.preventDefault());
+  });
+  document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 
-    window.addEventListener('touchend', (e) => {
-      if (gameStarted) return;
-      for (const t of e.changedTouches) {
-        if (touches[t.identifier]) {
-          removeCircle(t.identifier);
-          remainingPlayers.unshift(touches[t.identifier].number);
-          delete touches[t.identifier];
-        }
-      }
-      updateMessage(`${round}라운드: 손가락을 올려주세요 (최대 ${maxGroup}명)`);
-    });
+</script>
 
-    document.addEventListener('gesturestart', e => e.preventDefault());
-    document.addEventListener('gesturechange', e => e.preventDefault());
-    document.addEventListener('gestureend', e => e.preventDefault());
-    document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-  </script>
 </body>
 </html>
