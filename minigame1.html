@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1">
   <title>터치 생존 게임</title>
   <style>
     body, html {
@@ -35,6 +35,7 @@
       color: white;
       font-size: 24px;
       font-family: sans-serif;
+      z-index: 9999;
     }
   </style>
 </head>
@@ -59,6 +60,14 @@
     function removeCircle(id) {
       const el = document.querySelector(`.circle[data-id='${id}']`);
       if (el) el.remove();
+    }
+
+    function updateCirclePosition(id, x, y) {
+      const el = document.querySelector(`.circle[data-id='${id}']`);
+      if (el) {
+        el.style.left = `${x - 50}px`;
+        el.style.top = `${y - 50}px`;
+      }
     }
 
     function updateMessage(msg) {
@@ -97,9 +106,20 @@
       if (gameStarted) return;
       for (const t of e.changedTouches) {
         if (Object.keys(touches).length >= 5) return;
-        touches[t.identifier] = createCircle(t.identifier, t.clientX, t.clientY);
+        if (!touches[t.identifier]) {
+          touches[t.identifier] = createCircle(t.identifier, t.clientX, t.clientY);
+        }
       }
       checkIfIdle();
+    });
+
+    window.addEventListener('touchmove', (e) => {
+      if (gameStarted) return;
+      for (const t of e.changedTouches) {
+        if (touches[t.identifier]) {
+          updateCirclePosition(t.identifier, t.clientX, t.clientY);
+        }
+      }
     });
 
     window.addEventListener('touchend', (e) => {
