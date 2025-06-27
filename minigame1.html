@@ -75,7 +75,8 @@
       box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
       z-index: 10000;
       display: none;
-      max-height: 70vh;
+      max-height: 80vh;
+      max-width: 90vw;
       overflow-y: auto;
       min-width: 300px;
     }
@@ -185,18 +186,30 @@
       background-color: #e55a00;
       transform: scale(1.05);
     }
+
+    /* 경고 메시지 */
+    #warning-message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(255, 0, 0, 0.9);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      z-index: 10001;
+      display: none;
+      box-shadow: 0 0 20px rgba(255, 0, 0, 0.7);
+    }
   </style>
 </head>
 <body>
   <div id="config">
-    <label for="playerCount">참가 인원:</label>
-    <select id="playerCount">
-      <option value="5">5명</option>
-      <option value="10">10명</option>
-      <option value="15">15명</option>
-      <option value="20">20명</option>
-      <option value="25">25명</option>
-    </select>
+    <label for="playerCount">참가 인원 (2-25명):</label>
+    <input type="number" id="playerCount" min="2" max="25" value="10" style="width: 60px; text-align: center;">
     <button onclick="startLeague()">리그 시작</button>
   </div>
 
@@ -221,6 +234,8 @@
     </div>
   </div>
 
+  <div id="warning-message"></div>
+
   <div id="message">참가 인원을 선택하고 시작하세요</div>
 
   <script>
@@ -234,6 +249,28 @@
     let eliminatedPlayers = []; // 탈락자 기록
     let round = 1;
     const maxGroup = 5;
+
+    // 다음 라운드 최소 인원을 확인하는 함수
+    function getMinParticipants(remainingCount) {
+      if (remainingCount <= 5) return remainingCount; // 결승전
+      
+      // 다음 라운드에서 최소 2명이 남도록 계산
+      let minNeeded = 2;
+      while (remainingCount - minNeeded < 2) {
+        minNeeded++;
+      }
+      return Math.min(minNeeded, maxGroup, remainingCount);
+    }
+
+    // 경고 메시지 표시
+    function showWarning(message) {
+      const warningEl = document.getElementById('warning-message');
+      warningEl.textContent = message;
+      warningEl.style.display = 'block';
+      setTimeout(() => {
+        warningEl.style.display = 'none';
+      }, 3000);
+    }
 
     // 색상 코드를 한글 색상명으로 변환
     function getColorName(hexColor) {
@@ -311,7 +348,16 @@
     }
 
     function startLeague() {
-      totalPlayers = parseInt(document.getElementById('playerCount').value);
+      const input = document.getElementById('playerCount');
+      const inputValue = parseInt(input.value);
+      
+      if (isNaN(inputValue) || inputValue < 2 || inputValue > 25) {
+        showWarning('참가 인원은 2명 이상 25명 이하로 입력해주세요!');
+        input.value = Math.max(2, Math.min(25, inputValue || 10));
+        return;
+      }
+      
+      totalPlayers = inputValue;
       remainingPlayers = Array.from({ length: totalPlayers }, (_, i) => i + 1);
       allSurvivors = [];
       eliminatedPlayers = [];
@@ -321,7 +367,9 @@
       document.getElementById('config').style.display = 'none';
       document.getElementById('results-table').style.display = 'none';
       
-      updateMessage(`${totalPlayers === 5 ? '🔥 결승전' : `${round}라운드`}: 손가락을 올려주세요 (최대 ${maxGroup}명)`, false);
+      const minParticipants = getMinParticipants(remainingPlayers.length);
+      const roundLabel = totalPlayers <= 5 ? '🔥 결승전' : `${round}라운드`;
+      updateMessage(`${roundLabel}: 손가락을 올려주세요 (${minParticipants}명 필요)`, false);
       updateWinnersDisplay();
     }
 
@@ -391,7 +439,9 @@
         } else {
           round++;
         }
-        updateMessage(`${round === '🔥 결승전' ? '🔥 결승전' : `${round}라운드`}: 손가락을 올려주세요 (최대 ${maxGroup}명)`, false);
+        const minParticipants = getMinParticipants(remainingPlayers.length);
+        const roundLabel = round === '🔥 결승전' ? '🔥 결승전' : `${round}라운드`;
+        updateMessage(`${roundLabel}: 손가락을 올려주세요 (${minParticipants}명 필요)`, false);
       } else {
         showFinalResults();
       }
@@ -461,7 +511,10 @@
     }
 
     function checkIfIdle() {
-      if (Object.keys(touches).length >= 2) {
+      const currentParticipants = Object.keys(touches).length;
+      const minParticipants = getMinParticipants(remainingPlayers.length + currentParticipants);
+      
+      if (currentParticipants >= minParticipants) {
         if (checkIdleTimeout) clearTimeout(checkIdleTimeout);
         checkIdleTimeout = setTimeout(() => {
           if (!gameStarted && !waitingForNext) {
@@ -473,10 +526,22 @@
 
     window.addEventListener('touchstart', (e) => {
       if (gameStarted || waitingForNext) return;
+      
+      const currentParticipants = Object.keys(touches).length;
+      const totalRemaining = remainingPlayers.length + currentParticipants;
+      const minParticipants = getMinParticipants(totalRemaining);
+      const maxAllowed = Math.min(maxGroup, remainingPlayers.length);
+      
       updateMessage('', false);
       
       for (const t of e.changedTouches) {
-        if (Object.keys(touches).length >= maxGroup) return;
+        if (currentParticipants >= maxAllowed) {
+          if (currentParticipants < minParticipants) {
+            showWarning(`다음 라운드 최소 인원을 만족하지 못합니다! (${minParticipants}명 필요)`);
+          }
+          return;
+        }
+        
         if (!touches[t.identifier]) {
           const number = remainingPlayers.shift();
           if (!number) return;
@@ -504,8 +569,13 @@
           delete touches[t.identifier];
         }
       }
+      
+      const currentParticipants = Object.keys(touches).length;
+      const totalRemaining = remainingPlayers.length + currentParticipants;
+      const minParticipants = getMinParticipants(totalRemaining);
       const currentRoundLabel = round === '🔥 결승전' ? '🔥 결승전' : `${round}라운드`;
-      updateMessage(`${currentRoundLabel}: 손가락을 올려주세요 (최대 ${maxGroup}명)`, false);
+      
+      updateMessage(`${currentRoundLabel}: 손가락을 올려주세요 (${minParticipants}명 필요)`, false);
     });
 
     document.addEventListener('gesturestart', e => e.preventDefault());
