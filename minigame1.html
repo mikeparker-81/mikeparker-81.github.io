@@ -6,17 +6,21 @@
   <title>터치 생존 리그</title>
   <style>
     html, body {
-      margin: 0; padding: 0; overflow: hidden; touch-action: none;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      touch-action: none;
       background: linear-gradient(135deg, #0f0f0f, #1c1c1c);
       font-family: 'Segoe UI', sans-serif;
-      -webkit-user-select: none; -ms-user-select: none; user-select: none;
-      color: white;
-      height: 100vh;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
     }
 
     #config {
       position: absolute;
-      top: 40px; left: 50%;
+      top: 40px;
+      left: 50%;
       transform: translateX(-50%);
       color: white;
       font-size: 20px;
@@ -34,12 +38,83 @@
       font-size: 16px;
       border-radius: 6px;
       border: none;
-      cursor: pointer;
+    }
+
+    /* 라운드별 당첨자 표시 영역 */
+    #winners-display {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: white;
+      font-size: 14px;
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(255,255,255,0.3);
+      z-index: 9998;
+      display: none;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .winner-item {
+      margin: 3px 0;
+      font-weight: bold;
+    }
+
+    /* 최종 결과 테이블 */
+    #results-table {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+      z-index: 10000;
+      display: none;
+      max-height: 70vh;
+      overflow-y: auto;
+      min-width: 300px;
+    }
+
+    #results-table h2 {
+      text-align: center;
+      color: #00ffff;
+      margin-top: 0;
+    }
+
+    .results-section {
+      margin: 15px 0;
+    }
+
+    .results-section h3 {
+      color: #ffaa00;
+      border-bottom: 1px solid #333;
+      padding-bottom: 5px;
+    }
+
+    .player-item {
+      padding: 5px 10px;
+      margin: 3px 0;
+      border-radius: 5px;
+      background-color: rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .player-number {
+      font-weight: bold;
+      font-size: 16px;
     }
 
     .circle {
       position: absolute;
-      width: 100px; height: 100px;
+      width: 100px;
+      height: 100px;
       border-radius: 50%;
       transform: scale(1);
       animation: pulse 1s infinite;
@@ -71,41 +146,45 @@
       border-radius: 10px;
       box-shadow: 0 0 10px #00ffff55;
       z-index: 9999;
-      white-space: pre-line;
-      user-select: none;
-      cursor: default;
-    }
-
-    #scoreboard {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      max-height: 90vh;
-      overflow-y: auto;
-      background: rgba(0,0,0,0.7);
-      padding: 10px;
-      border-radius: 10px;
-      font-size: 16px;
-      color: white;
-      z-index: 9999;
-      min-width: 220px;
-      user-select: none;
-    }
-
-    #scoreboard table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 6px;
-    }
-    #scoreboard th, #scoreboard td {
-      border: 1px solid #00ffff66;
-      padding: 4px 6px;
       text-align: center;
-    }
-    #scoreboard th {
-      background-color: #00ffff33;
+      max-width: 80%;
     }
 
+    .next-button {
+      background-color: #00ffff;
+      color: black;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: all 0.3s;
+    }
+
+    .next-button:hover {
+      background-color: #00cccc;
+      transform: scale(1.05);
+    }
+
+    .restart-button {
+      background-color: #ff6600;
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 15px;
+      transition: all 0.3s;
+    }
+
+    .restart-button:hover {
+      background-color: #e55a00;
+      transform: scale(1.05);
+    }
   </style>
 </head>
 <body>
@@ -121,14 +200,25 @@
     <button onclick="startLeague()">리그 시작</button>
   </div>
 
-  <div id="scoreboard" style="display:none;">
-    <div><strong>라운드별 당첨자</strong></div>
-    <div id="winnersList" style="margin-bottom:12px;"></div>
-    <div><strong>중도 탈락자</strong></div>
-    <table>
-      <thead><tr><th>번호</th><th>탈락 라운드</th></tr></thead>
-      <tbody id="losersTable"></tbody>
-    </table>
+  <div id="winners-display"></div>
+
+  <div id="results-table">
+    <h2>🏆 최종 결과</h2>
+    <div class="results-section">
+      <h3>🥇 우승자</h3>
+      <div id="winner-list"></div>
+    </div>
+    <div class="results-section">
+      <h3>🏅 생존자 (라운드별)</h3>
+      <div id="survivors-list"></div>
+    </div>
+    <div class="results-section">
+      <h3>❌ 탈락자</h3>
+      <div id="eliminated-list"></div>
+    </div>
+    <div style="text-align: center;">
+      <button class="restart-button" onclick="resetGame()">다시 시작</button>
+    </div>
   </div>
 
   <div id="message">참가 인원을 선택하고 시작하세요</div>
@@ -136,22 +226,34 @@
   <script>
     const touches = {};
     let gameStarted = false;
+    let waitingForNext = false;
     let checkIdleTimeout = null;
     let totalPlayers = 0;
     let remainingPlayers = [];
-    let finalists = [];
-    let losers = []; // 중도 탈락자 기록
+    let allSurvivors = []; // 라운드별 생존자 기록
+    let eliminatedPlayers = []; // 탈락자 기록
     let round = 1;
     const maxGroup = 5;
 
-    // 당첨자 누적 기록 (라운드별)
-    let winnersByRound = [];
+    // 색상 코드를 한글 색상명으로 변환
+    function getColorName(hexColor) {
+      const colorMap = {
+        'F': '빨강', 'E': '빨강', 'D': '빨강', 'C': '빨강',
+        'B': '주황', 'A': '주황', '9': '노랑', '8': '노랑',
+        '7': '초록', '6': '초록', '5': '파랑', '4': '파랑',
+        '3': '보라', '2': '보라', '1': '분홍', '0': '분홍'
+      };
+      const firstChar = hexColor.charAt(1).toUpperCase();
+      return colorMap[firstChar] || '무지개';
+    }
 
     function getRandomColor() {
-      const letters = '0123456789ABCDEF';
-      let color = '#';
-      for (let i = 0; i < 6; i++) color += letters[Math.floor(Math.random() * 16)];
-      return color;
+      const colors = [
+        '#FF4444', '#44FF44', '#4444FF', '#FFFF44', '#FF44FF', 
+        '#44FFFF', '#FF8844', '#88FF44', '#4488FF', '#FF4488',
+        '#88FF88', '#8888FF', '#FFAA44', '#AA44FF', '#44AAFF'
+      ];
+      return colors[Math.floor(Math.random() * colors.length)];
     }
 
     function createCircle(id, x, y, number, color) {
@@ -179,158 +281,182 @@
       }
     }
 
-    function updateMessage(msg, visible = true, cursorPointer = false) {
+    function updateMessage(msg, showButton = false, buttonText = '다음 라운드') {
       const el = document.getElementById('message');
-      el.textContent = msg;
-      el.style.display = visible ? 'block' : 'none';
-      el.style.cursor = cursorPointer ? 'pointer' : 'default';
+      el.innerHTML = msg;
+      if (showButton) {
+        el.innerHTML += `<br><button class="next-button" onclick="proceedToNext()">${buttonText}</button>`;
+      }
+      el.style.display = 'block';
     }
 
     function updateWinnersDisplay() {
-      const container = document.getElementById('winnersList');
-      container.innerHTML = ''; // 초기화
-
-      winnersByRound.forEach((winner, idx) => {
-        const roundText = (typeof winner.round === 'number') ? `${winner.round}라운드` : winner.round;
-        const span = document.createElement('div');
-        span.style.marginBottom = '4px';
-        span.innerHTML = `<strong>${roundText}:</strong> ` +
-          `<span style="color:${winner.color}; font-weight:bold;">${winner.number}번</span>`;
-        container.appendChild(span);
-      });
-    }
-
-    function updateLosersTable() {
-      const tbody = document.getElementById('losersTable');
-      tbody.innerHTML = '';
-      losers.forEach(loser => {
-        const tr = document.createElement('tr');
-        const tdNum = document.createElement('td');
-        tdNum.textContent = loser.number;
-        const tdRound = document.createElement('td');
-        tdRound.textContent = loser.round;
-        tr.appendChild(tdNum);
-        tr.appendChild(tdRound);
-        tbody.appendChild(tr);
+      const display = document.getElementById('winners-display');
+      if (allSurvivors.length === 0) {
+        display.style.display = 'none';
+        return;
+      }
+      
+      display.style.display = 'block';
+      display.innerHTML = '<div style="font-weight: bold; margin-bottom: 8px; color: #00ffff;">생존자 기록</div>';
+      
+      allSurvivors.forEach((survivor, index) => {
+        const roundLabel = survivor.round === '🔥 결승전' ? '결승전' : `${survivor.round}라운드`;
+        const colorName = getColorName(survivor.color);
+        const item = document.createElement('div');
+        item.className = 'winner-item';
+        item.innerHTML = `${roundLabel}: <span style="color: ${survivor.color}">${survivor.number}번 (${colorName})</span>`;
+        display.appendChild(item);
       });
     }
 
     function startLeague() {
       totalPlayers = parseInt(document.getElementById('playerCount').value);
       remainingPlayers = Array.from({ length: totalPlayers }, (_, i) => i + 1);
-      finalists = [];
-      losers = [];
-      winnersByRound = [];
+      allSurvivors = [];
+      eliminatedPlayers = [];
       round = 1;
-      gameStarted = false;
-
+      waitingForNext = false;
+      
       document.getElementById('config').style.display = 'none';
-      document.getElementById('scoreboard').style.display = 'block';
+      document.getElementById('results-table').style.display = 'none';
+      
+      updateMessage(`${totalPlayers === 5 ? '🔥 결승전' : `${round}라운드`}: 손가락을 올려주세요 (최대 ${maxGroup}명)`, false);
       updateWinnersDisplay();
-      updateLosersTable();
-      updateMessage(`${round}라운드: 손가락을 올려주세요 (최대 ${maxGroup}명)`, true);
     }
 
     function startGame() {
       gameStarted = true;
-      updateMessage(`🎮 게임 시작! ${round}라운드 랜덤 탈락 중...`, true);
+      updateMessage(`🎮 게임 시작! ${round}라운드 랜덤 탈락 중...`, false);
       navigator.vibrate && navigator.vibrate([300, 100, 300]);
 
       const ids = Object.keys(touches);
-
-      if(ids.length < 2) {
-        // 터치가 1명 이하면 무조건 그 사람이 당첨
-        const winnerId = ids[0];
-        const winner = touches[winnerId];
-        endRound(winner);
-        return;
-      }
+      const participantNumbers = ids.map(id => touches[id].number);
 
       const interval = setInterval(() => {
         if (ids.length <= 1) {
           clearInterval(interval);
           const winnerId = ids[0];
           const winner = touches[winnerId];
-          endRound(winner);
+          const colorName = getColorName(winner.color);
+          
+          // 생존자 기록
+          allSurvivors.push({
+            round: round,
+            number: winner.number,
+            color: winner.color
+          });
+
+          // 탈락자 기록 (참가했지만 생존하지 못한 사람들)
+          participantNumbers.forEach(num => {
+            if (num !== winner.number) {
+              eliminatedPlayers.push({
+                round: round,
+                number: num,
+                color: Object.values(touches).find(t => t.number === num)?.color || '#FFFFFF'
+              });
+            }
+          });
+
+          gameStarted = false;
+          waitingForNext = true;
+
+          // 당첨자를 색상과 함께 표시
+          updateMessage(
+            `🎯 <span style="color: ${winner.color}; font-weight: bold;">${winner.number}번 (${colorName})</span> 생존!`, 
+            true, 
+            remainingPlayers.length > 1 ? '다음 라운드' : '결과 보기'
+          );
+
+          Object.keys(touches).forEach(removeCircle);
+          for (let id in touches) delete touches[id];
+          
+          updateWinnersDisplay();
           return;
         }
 
         const randomIndex = Math.floor(Math.random() * ids.length);
         const removedId = ids.splice(randomIndex, 1)[0];
-        const removedPlayer = touches[removedId];
-        if(removedPlayer) {
-          // 중도 탈락자로 기록
-          losers.push({ number: removedPlayer.number, round });
-          updateLosersTable();
-        }
         removeCircle(removedId);
       }, 1500);
     }
 
-    // 라운드 종료 처리
-    function endRound(winner) {
-      updateMessage(`🎯 ${winner.number}번 당첨! 터치하면 다음 진행`, true, true);
+    function proceedToNext() {
+      if (!waitingForNext) return;
+      waitingForNext = false;
 
-      winnersByRound.push({ round, number: winner.number, color: winner.color });
-      updateWinnersDisplay();
-
-      finalists.push({ number: winner.number, color: winner.color });
-      gameStarted = false;
-
-      Object.keys(touches).forEach(removeCircle);
-      for (let id in touches) delete touches[id];
-
-      // 다음 진행 터치 이벤트 활성화
-      const msgEl = document.getElementById('message');
-      const onNext = () => {
-        msgEl.style.cursor = 'default';
-        msgEl.removeEventListener('click', onNext);
-
-        if (round === '🔥 결승전') {
-          // 최종 우승자 표시 후 초기화 대기
-          updateMessage(`🏆 최종 우승자: ${winner.number}번! 터치하면 다시 시작합니다`, true, true);
-
-          msgEl.addEventListener('click', () => {
-            resetGame();
-          }, { once: true });
-          return;
-        }
-
-        // 다음 라운드 준비
-        if(remainingPlayers.length === 0 && finalists.length > 1){
-          // 결승 진입
-          remainingPlayers = finalists.map(f => f.number);
-          finalists = [];
+      if (remainingPlayers.length > 1) {
+        if (remainingPlayers.length <= 5) {
           round = '🔥 결승전';
-          updateMessage(`${round}: 손가락을 올려주세요 (최대 ${maxGroup}명)`, true);
-        } else if(remainingPlayers.length > 0){
-          round++;
-          updateMessage(`${round}라운드: 손가락을 올려주세요 (최대 ${maxGroup}명)`, true);
         } else {
-          // 만약 여기 온다면 게임 끝난 거임. 안전장치
-          updateMessage(`🏆 최종 우승자: ${winner.number}번! 터치하면 다시 시작합니다`, true, true);
-          msgEl.addEventListener('click', () => resetGame(), { once: true });
-          return;
+          round++;
         }
+        updateMessage(`${round === '🔥 결승전' ? '🔥 결승전' : `${round}라운드`}: 손가락을 올려주세요 (최대 ${maxGroup}명)`, false);
+      } else {
+        showFinalResults();
+      }
+    }
 
-        gameStarted = false;
-      };
+    function showFinalResults() {
+      document.getElementById('message').style.display = 'none';
+      
+      // 우승자
+      const winner = allSurvivors[allSurvivors.length - 1];
+      const winnerColorName = getColorName(winner.color);
+      document.getElementById('winner-list').innerHTML = 
+        `<div class="player-item">
+          <span class="player-number" style="color: ${winner.color}">${winner.number}번 (${winnerColorName})</span>
+          <span>🏆</span>
+        </div>`;
 
-      msgEl.addEventListener('click', onNext, { once: true });
+      // 생존자 목록
+      const survivorsList = document.getElementById('survivors-list');
+      survivorsList.innerHTML = '';
+      allSurvivors.forEach(survivor => {
+        const roundLabel = survivor.round === '🔥 결승전' ? '결승전' : `${survivor.round}라운드`;
+        const colorName = getColorName(survivor.color);
+        const item = document.createElement('div');
+        item.className = 'player-item';
+        item.innerHTML = `
+          <span class="player-number" style="color: ${survivor.color}">${survivor.number}번 (${colorName})</span>
+          <span style="font-size: 12px;">${roundLabel}</span>
+        `;
+        survivorsList.appendChild(item);
+      });
+
+      // 탈락자 목록
+      const eliminatedList = document.getElementById('eliminated-list');
+      eliminatedList.innerHTML = '';
+      eliminatedPlayers.forEach(eliminated => {
+        const roundLabel = eliminated.round === '🔥 결승전' ? '결승전' : `${eliminated.round}라운드`;
+        const colorName = getColorName(eliminated.color);
+        const item = document.createElement('div');
+        item.className = 'player-item';
+        item.innerHTML = `
+          <span class="player-number" style="color: ${eliminated.color}">${eliminated.number}번 (${colorName})</span>
+          <span style="font-size: 12px; color: #ff6666;">${roundLabel} 탈락</span>
+        `;
+        eliminatedList.appendChild(item);
+      });
+
+      document.getElementById('results-table').style.display = 'block';
     }
 
     function resetGame() {
       document.getElementById('config').style.display = 'block';
-      document.getElementById('scoreboard').style.display = 'none';
-      updateMessage('참가 인원을 선택하고 시작하세요');
+      document.getElementById('results-table').style.display = 'none';
+      document.getElementById('winners-display').style.display = 'none';
+      updateMessage('참가 인원을 선택하고 시작하세요', false);
+      
       for (let id in touches) removeCircle(id);
       for (let id in touches) delete touches[id];
+      
       gameStarted = false;
+      waitingForNext = false;
       totalPlayers = 0;
       remainingPlayers = [];
-      finalists = [];
-      losers = [];
-      winnersByRound = [];
+      allSurvivors = [];
+      eliminatedPlayers = [];
       round = 1;
     }
 
@@ -338,7 +464,7 @@
       if (Object.keys(touches).length >= 2) {
         if (checkIdleTimeout) clearTimeout(checkIdleTimeout);
         checkIdleTimeout = setTimeout(() => {
-          if (!gameStarted) {
+          if (!gameStarted && !waitingForNext) {
             startGame();
           }
         }, 3000);
@@ -346,8 +472,9 @@
     }
 
     window.addEventListener('touchstart', (e) => {
-      if (gameStarted) return;
-      updateMessage('', false); // 터치하면 메시지 숨김
+      if (gameStarted || waitingForNext) return;
+      updateMessage('', false);
+      
       for (const t of e.changedTouches) {
         if (Object.keys(touches).length >= maxGroup) return;
         if (!touches[t.identifier]) {
@@ -362,14 +489,14 @@
     });
 
     window.addEventListener('touchmove', (e) => {
-      if (gameStarted) return;
+      if (gameStarted || waitingForNext) return;
       for (const t of e.changedTouches) {
         if (touches[t.identifier]) updateCirclePosition(t.identifier, t.clientX, t.clientY);
       }
     });
 
     window.addEventListener('touchend', (e) => {
-      if (gameStarted) return;
+      if (gameStarted || waitingForNext) return;
       for (const t of e.changedTouches) {
         if (touches[t.identifier]) {
           removeCircle(t.identifier);
@@ -377,10 +504,10 @@
           delete touches[t.identifier];
         }
       }
-      updateMessage(`${round}라운드: 손가락을 올려주세요 (최대 ${maxGroup}명)`);
+      const currentRoundLabel = round === '🔥 결승전' ? '🔥 결승전' : `${round}라운드`;
+      updateMessage(`${currentRoundLabel}: 손가락을 올려주세요 (최대 ${maxGroup}명)`, false);
     });
 
-    // 터치 제스처 방지
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('gesturechange', e => e.preventDefault());
     document.addEventListener('gestureend', e => e.preventDefault());
