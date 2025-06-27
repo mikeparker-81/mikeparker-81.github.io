@@ -2,9 +2,9 @@
 <html lang="ko">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>서바이벌 게임 - 참가자 선택 포함</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>서바이벌 게임</title>
   <style>
     * {
       box-sizing: border-box;
@@ -15,486 +15,186 @@
       overflow: hidden;
       font-family: 'Pretendard', sans-serif;
       background: #fef9f3;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
     }
 
     canvas {
       display: block;
-      background: #fff9e7;
     }
 
-    #infoBar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      background: linear-gradient(90deg, #f4c542, #d4af37);
-      color: #3a2e00;
-      font-weight: 700;
-      font-size: 16px;
-      padding: 12px 16px;
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
-      z-index: 20;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      user-select: none;
-    }
-
-    /* 참가자 선택 전체 덮는 배경 */
-    #startOverlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(10, 10, 10, 0.85);
-      backdrop-filter: blur(5px);
-      z-index: 100;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      color: #fff;
-      user-select: none;
-    }
-
-    #selectionText {
-      font-size: 26px;
-      font-weight: 800;
-      margin-bottom: 20px;
-      letter-spacing: 2px;
-      text-shadow: 0 0 10px #ffcc33;
-    }
-
-    #buttonContainer {
-      display: flex;
-      gap: 14px;
-      flex-wrap: nowrap;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 30px;
-      user-select: none;
-    }
-
-    /* 참가자 수 선택 버튼 */
-    .numBtn {
-      background: linear-gradient(145deg, #ff9f1c, #ff6f00);
-      border: none;
-      border-radius: 12px;
-      color: #fff;
-      font-weight: 700;
-      font-size: 20px;
-      padding: 14px 28px;
-      cursor: pointer;
-      box-shadow: 0 6px 14px rgba(255, 111, 0, 0.75);
-      transition: all 0.3s ease;
-      text-shadow: 0 0 4px #330800;
-      user-select: none;
-    }
-
-    .numBtn:hover,
-    .numBtn:focus {
-      background: linear-gradient(145deg, #ffb844, #ff9100);
-      box-shadow: 0 8px 20px rgba(255, 144, 0, 0.9);
-      outline: none;
-      transform: scale(1.08);
-    }
-
-    /* 선택된 버튼 강조 */
-    .numBtn.selected {
-      background: linear-gradient(145deg, #ffe259, #ffa751);
-      box-shadow: 0 0 25px 6px #ffd54f;
-      color: #3a2e00;
-      transform: scale(1.1);
-      cursor: default;
-    }
-
-    /* 시작/리그 시작 버튼 */
-    #startGameBtn {
-      background: linear-gradient(145deg, #42a5f5, #1565c0);
-      border: none;
-      border-radius: 14px;
-      color: white;
-      font-weight: 900;
-      font-size: 24px;
-      padding: 16px 50px;
-      cursor: pointer;
-      box-shadow: 0 6px 18px rgba(21, 101, 192, 0.9);
-      user-select: none;
-      text-shadow: 0 0 6px #003366;
-      transition: all 0.3s ease;
-    }
-
-    #startGameBtn:disabled {
-      background: #7f8c8d;
-      box-shadow: none;
-      cursor: not-allowed;
-      color: #ccc;
-      transform: none !important;
-    }
-
-    #startGameBtn:hover:not(:disabled),
-    #startGameBtn:focus:not(:disabled) {
-      background: linear-gradient(145deg, #5dade2, #1a5276);
-      box-shadow: 0 8px 25px rgba(26, 82, 118, 1);
-      outline: none;
-      transform: scale(1.05);
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 8px 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      font-size: 14px;
     }
 
     #winnerOverlay {
-      position: fixed;
+      position: absolute;
       top: 0;
       left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.75);
-      color: #fff;
-      font-weight: 900;
-      font-size: 36px;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
-      z-index: 50;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.6s ease;
-      text-align: center;
-      padding: 20px;
-    }
-
-    #winnerOverlay.show {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    #winnerText {
-      background: linear-gradient(45deg, #ffe259, #ffa751);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: popInScale 0.6s ease forwards;
-      margin-bottom: 24px;
-      user-select: none;
-    }
-
-    @keyframes popInScale {
-      0% {
-        opacity: 0;
-        transform: scale(0.5);
-      }
-
-      100% {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-
-    #finalList {
-      max-width: 480px;
-      width: 90vw;
-      max-height: 50vh;
-      overflow-y: auto;
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
-      user-select: text;
-      font-size: 18px;
-      margin-bottom: 24px;
-    }
-
-    #finalList table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    #finalList th,
-    #finalList td {
-      border: 1px solid #d4af37;
-      padding: 8px 12px;
-      text-align: center;
-    }
-
-    #finalList th {
-      background: #f4c542;
-      color: #3a2e00;
-      font-weight: 700;
-    }
-
-    #finalList td.colorCell {
-      font-weight: 700;
+      justify-content: center;
       color: #fff;
-      border-radius: 6px;
+      font-size: 32px;
+      font-weight: bold;
+      z-index: 10;
+      display: none;
     }
 
-    #finalList td.color-1 {
-      background-color: #f94144;
+    #winnerOverlay .trophy {
+      font-size: 64px;
+      margin-bottom: 20px;
+      animation: trophy 1s ease infinite alternate;
     }
 
-    #finalList td.color-2 {
-      background-color: #f3722c;
-    }
+    @keyframes trophy {
+      from {
+        transform: translateY(0);
+      }
 
-    #finalList td.color-3 {
-      background-color: #f8961e;
-    }
-
-    #finalList td.color-4 {
-      background-color: #f9c74f;
-      color: #3a2e00;
-    }
-
-    #finalList td.color-5 {
-      background-color: #90be6d;
-    }
-
-    #finalList td.color-6 {
-      background-color: #43aa8b;
-    }
-
-    #finalList td.color-7 {
-      background-color: #577590;
-    }
-
-    #finalList td.color-8 {
-      background-color: #277da1;
-    }
-
-    #finalList td.color-9 {
-      background-color: #4d908e;
-    }
-
-    #finalList td.color-10 {
-      background-color: #f94144;
+      to {
+        transform: translateY(-10px);
+      }
     }
   </style>
 </head>
 
 <body>
-  <div id="infoBar" aria-live="polite" aria-atomic="true">
-    <div id="roundInfo">라운드: 0</div>
-    <div id="winnerInfo">당첨자: 없음</div>
+  <canvas id="gameCanvas"></canvas>
+  <div id="info">라운드: 0<br>당첨자: 없음</div>
+  <div id="winnerOverlay" onclick="location.reload()">
+    <div class="trophy">🏆</div>
+    우승자: <span id="winnerNumber"></span>번!
+    <div style="font-size:14px; margin-top:10px;">터치하면 다시 시작</div>
   </div>
-
-  <canvas id="gameCanvas" aria-label="게임 캔버스" role="img"></canvas>
-
-  <div id="startOverlay" role="dialog" aria-modal="true" aria-labelledby="selectionText">
-    <div id="selectionText">참가자 수를 선택하세요</div>
-    <div id="buttonContainer">
-      <button class="numBtn" data-count="5" aria-pressed="false">5명</button>
-      <button class="numBtn" data-count="10" aria-pressed="false">10명</button>
-      <button class="numBtn" data-count="15" aria-pressed="false">15명</button>
-      <button class="numBtn" data-count="20" aria-pressed="false">20명</button>
-      <button class="numBtn" data-count="25" aria-pressed="false">25명</button>
-    </div>
-    <button id="startGameBtn" disabled>선택하세요</button>
-  </div>
-
-  <div id="winnerOverlay" role="alert" aria-live="assertive" aria-atomic="true">
-    <div id="winnerText"></div>
-    <div id="finalList" style="display:none;"></div>
-  </div>
+  <audio id="popSound" src="https://cdn.pixabay.com/audio/2022/03/15/audio_0e9881b1ae.mp3"></audio>
 
   <script>
-    (function () {
-      const canvas = document.getElementById('gameCanvas');
-      const ctx = canvas.getContext('2d');
-      const infoBar = document.getElementById('infoBar');
-      const roundInfo = document.getElementById('roundInfo');
-      const winnerInfo = document.getElementById('winnerInfo');
-      const winnerOverlay = document.getElementById('winnerOverlay');
-      const winnerText = document.getElementById('winnerText');
-      const finalList = document.getElementById('finalList');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const info = document.getElementById('info');
+    const overlay = document.getElementById('winnerOverlay');
+    const winnerSpan = document.getElementById('winnerNumber');
+    const popSound = document.getElementById('popSound');
 
-      const startOverlay = document.getElementById('startOverlay');
-      const buttons = Array.from(document.querySelectorAll('.numBtn'));
-      const startGameBtn = document.getElementById('startGameBtn');
+    let players = [];
+    let roundWinners = [];
+    let currentRound = 0;
+    let maxTouch = 5;
+    let touched = [];
+    let radius = 40;
+    let gameActive = true;
 
-      const colors = ['#f94144', '#f3722c', '#f8961e', '#f9c74f', '#90be6d', '#43aa8b', '#577590', '#277da1', '#4d908e', '#f94144'];
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
 
-      let players = [];
-      let currentRound = 0;
-      let maxTouch = 0;
-      let roundWinners = [];
-      let winnerShowing = false;
+    window.addEventListener('resize', resize);
+    resize();
 
-      // 초기화
-      function createPlayers(num) {
-        players = [];
-        for (let i = 1; i <= num; i++) {
-          players.push({ num: i, x: 0, y: 0, color: colors[(i - 1) % colors.length] });
-        }
-        maxTouch = num;
+    function createPlayers(count) {
+      players = [];
+      for (let i = 1; i <= count; i++) {
+        players.push(i);
       }
+    }
 
-      function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        drawPlayers();
-      }
-
-      function drawPlayers() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.textBaseline = 'middle';
+    function drawCircles(arr, highlight = null, permanent = false) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      arr.forEach((num, i) => {
+        const x = Math.random() * (canvas.width - 2 * radius) + radius;
+        const y = Math.random() * (canvas.height - 2 * radius) + radius;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = highlight === num ? '#ff6b6b' : '#f4c542';
+        ctx.fill();
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 20px sans-serif';
         ctx.textAlign = 'center';
-        ctx.font = '22px Pretendard';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(num, x, y);
+      });
+    }
 
-        const padding = 80;
-        const cols = Math.min(players.length, 10);
-        const rows = Math.ceil(players.length / cols);
-        const circleSize = Math.min(60, (canvas.width - padding * 2) / cols - 10);
+    function startNextRound() {
+      touched = [];
+      currentRound++;
+      info.innerHTML = `라운드: ${currentRound}<br>당첨자: ${roundWinners.join(', ') || '없음'}`;
+    }
 
-        players.forEach((p, i) => {
-          const col = i % cols;
-          const row = Math.floor(i / cols);
-          p.x = padding + col * (circleSize + 14) + circleSize / 2;
-          p.y = canvas.height / 2 - (rows * (circleSize + 20)) / 2 + row * (circleSize + 20) + circleSize / 2;
+    function handleTouch(x, y) {
+      if (!gameActive || touched.length >= maxTouch) return;
 
-          // 원 그리기
-          ctx.fillStyle = p.color;
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 12;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, circleSize / 2, 0, Math.PI * 2);
-          ctx.fill();
+      let touchNum = null;
+      do {
+        touchNum = players[Math.floor(Math.random() * players.length)];
+      } while (touched.includes(touchNum));
 
-          // 번호 그리기
-          ctx.fillStyle = '#fff';
-          ctx.fillText(p.num, p.x, p.y);
-        });
-      }
+      touched.push(touchNum);
+      drawCircles(touched);
 
-      function updateInfoBar() {
-        roundInfo.textContent = `라운드: ${currentRound}`;
-        winnerInfo.textContent = roundWinners.length > 0 ? `당첨자: ${roundWinners[roundWinners.length - 1]}` : '당첨자: 없음';
-      }
-
-      // 터치 시 당첨자 선정 애니메이션
-      function handleTouch() {
-        if (winnerShowing) return;
-        if (currentRound >= maxTouch) {
-          showFinalList();
-          return;
-        }
-
-        currentRound++;
-        updateInfoBar();
-
-        // 당첨자 선정 랜덤
-        let winnerIndex;
-        do {
-          winnerIndex = Math.floor(Math.random() * players.length);
-        } while (roundWinners.includes(players[winnerIndex].num));
-
-        roundWinners.push(players[winnerIndex].num);
-        winnerShowing = true;
-
-        // 애니메이션 및 오버레이 표시
-        winnerText.textContent = `라운드 ${currentRound} 당첨자: ${players[winnerIndex].num} 🎉`;
-        winnerOverlay.classList.add('show');
-
+      if (touched.length === maxTouch) {
         setTimeout(() => {
-          winnerShowing = false;
-          winnerOverlay.classList.remove('show');
-          if (currentRound === maxTouch) {
-            showFinalList();
+          const winner = touched[Math.floor(Math.random() * touched.length)];
+          roundWinners.push(winner);
+          popSound.play();
+
+          if (roundWinners.length === 1) {
+            players = roundWinners;
+            roundWinners = [];
+            if (players.length === 1) {
+              showWinner(players[0]);
+              return;
+            }
           }
-        }, 2500);
+
+          startNextRound();
+        }, 2000);
       }
+    }
 
-      // 최종 명단 표 보여주기
-      function showFinalList() {
-        winnerText.textContent = '최종 우승자 명단';
-        winnerOverlay.classList.add('show');
-        finalList.style.display = 'block';
+    function showWinner(num) {
+      gameActive = false;
+      winnerSpan.textContent = num;
+      overlay.style.display = 'flex';
+    }
 
-        finalList.innerHTML = `
-          <table>
-            <thead>
-              <tr><th>라운드</th><th>당첨자 번호</th></tr>
-            </thead>
-            <tbody>
-              ${roundWinners.map((num, i) => `<tr>
-                <td>${i + 1}</td>
-                <td class="colorCell color-${(num % 10) || 10}">${num}</td>
-              </tr>`).join('')}
-            </tbody>
-          </table>
-        `;
+    canvas.addEventListener('touchstart', (e) => {
+      if (!gameActive) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      handleTouch(touch.clientX, touch.clientY);
+    });
 
-        winnerText.innerHTML = `최종 우승자: <span style="color:${colors[(roundWinners[roundWinners.length - 1] - 1) % colors.length]}">${roundWinners[roundWinners.length - 1]}</span> 🎉`;
+    canvas.addEventListener('mousedown', (e) => {
+      if (!gameActive) return;
+      handleTouch(e.clientX, e.clientY);
+    });
 
-        // 터치 시 초기화
-        function onReset() {
-          winnerOverlay.classList.remove('show');
-          finalList.style.display = 'none';
-          winnerShowing = false;
-          currentRound = 0;
-          roundWinners = [];
-          createPlayers(players.length);
-          drawPlayers();
-          startOverlay.style.display = 'flex'; // 다시 선택창 보이게
-          startGameBtn.disabled = true;
-          buttons.forEach(b => b.classList.remove('selected'));
-          winnerOverlay.removeEventListener('click', onReset);
-        }
-        winnerOverlay.addEventListener('click', onReset);
-      }
-
-      // 참가자 수 선택 버튼 클릭 처리
-      buttons.forEach(btn => {
-        btn.addEventListener('click', () => {
-          if (winnerShowing) return;
-          buttons.forEach(b => {
-            b.classList.remove('selected');
-            b.setAttribute('aria-pressed', 'false');
-          });
-          btn.classList.add('selected');
-          btn.setAttribute('aria-pressed', 'true');
-
-          const count = parseInt(btn.dataset.count, 10);
-          startGameBtn.disabled = false;
-
-          if (count === 5) {
-            startGameBtn.textContent = '시작';
-          } else if (count >= 10) {
-            startGameBtn.textContent = '리그 시작';
-          }
-        });
-      });
-
-      // 시작 버튼 클릭
-      startGameBtn.addEventListener('click', () => {
-        if (startGameBtn.disabled) return;
-        const selectedBtn = buttons.find(b => b.classList.contains('selected'));
-        if (!selectedBtn) return;
-
-        const count = parseInt(selectedBtn.dataset.count, 10);
-
-        createPlayers(count);
-        currentRound = 0;
-        roundWinners = [];
-        winnerShowing = false;
-
-        startOverlay.style.display = 'none';
-        resize();
-        updateInfoBar();
-        drawPlayers();
-      });
-
-      // 캔버스 터치 이벤트 (선택 전엔 무시)
-      canvas.addEventListener('click', () => {
-        if (startOverlay.style.display !== 'none') return; // 선택 중이면 무시
-        handleTouch();
-      });
-
-      window.addEventListener('resize', resize);
-
-      // 초기 화면은 선택 오버레이 보이기
-      startOverlay.style.display = 'flex';
-    })();
+    // 시작
+    const total = prompt('참가 인원을 입력하세요 (최소 5명)', '15');
+    if (total && parseInt(total) >= 5) {
+      createPlayers(parseInt(total));
+      startNextRound();
+    } else {
+      alert('5명 이상 입력해주세요.');
+      location.reload();
+    }
   </script>
 </body>
 
 </html>
+
