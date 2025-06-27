@@ -213,7 +213,7 @@
 
   <div id="winners-display"></div>
 
-  <div id="results-table">
+  <div id="results-table" style="max-height: 80vh; overflow-y: auto;">
     <h2>🏆 최종 결과</h2>
     <div class="results-section">
       <h3>🥇 우승자</h3>
@@ -227,7 +227,7 @@
       <h3>❌ 탈락자</h3>
       <div id="eliminated-list"></div>
     </div>
-    <div style="text-align: center;">
+    <div style="text-align: center; padding: 20px; position: sticky; bottom: 0; background: inherit;">
       <button class="restart-button" onclick="resetGame()">다시 시작</button>
     </div>
   </div>
@@ -324,7 +324,7 @@
       display.innerHTML = '<div style="font-weight: bold; margin-bottom: 8px; color: #00ff00;">생존자 기록</div>';
       
       allSurvivors.forEach((survivor, index) => {
-        const roundLabel = survivor.isFinal ? '결승전' : `${survivor.round}라운드`;
+        const roundLabel = survivor.round === '부전승' ? '부전승' : (survivor.isFinal ? '결승전' : `${survivor.round}라운드`);
         const colorName = getColorName(survivor.color);
         const item = document.createElement('div');
         item.className = 'winner-item';
@@ -442,14 +442,19 @@
           // 1명만 남으면 부전승으로 결승전 진출
           const lastPlayer = remainingPlayers[0];
           allSurvivors.push({
-            round: round + 1,
+            round: '부전승',
             number: lastPlayer,
             color: '#FFD700', // 금색으로 부전승 표시
-            isFinal: true,
+            isFinal: false,
             walkover: true // 부전승 표시
           });
           
-          showFinalResults();
+          // 부전승자를 포함한 모든 생존자로 결승전 진행
+          remainingPlayers = allSurvivors.map(s => s.number);
+          round++;
+          isFinal = true;
+          updateMessage(`결승전: 모든 생존자가 참여합니다 (최소 2명, 최대 5명)`, false);
+          updateWinnersDisplay();
           return;
         }
         
@@ -482,7 +487,7 @@
       const survivorsList = document.getElementById('survivors-list');
       survivorsList.innerHTML = '';
       allSurvivors.forEach(survivor => {
-        const roundLabel = survivor.isFinal ? '결승전' : `${survivor.round}라운드`;
+        const roundLabel = survivor.round === '부전승' ? '부전승' : (survivor.isFinal ? '결승전' : `${survivor.round}라운드`);
         const colorName = getColorName(survivor.color);
         const walkoverText = survivor.walkover ? ' (부전승)' : '';
         const item = document.createElement('div');
