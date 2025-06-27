@@ -248,23 +248,6 @@
     let round = 1;
     let isFinal = false;
 
-    // 결승전 여부 확인 (2-5명 사이)
-    function shouldBeFinal(remainingCount) {
-      return remainingCount <= 5;
-    }
-
-    // 라운드별 최대 참가 인원 계산
-    function getMaxParticipants(remainingCount) {
-      if (shouldBeFinal(remainingCount)) {
-        return remainingCount; // 결승전은 모든 인원 참여
-      }
-      
-      // 예선 라운드: 다음 라운드에 최소 2명이 남도록 제한
-      // 남은 인원이 6명이면 최대 4명까지 참가 가능 (1명 생존 시 다음 라운드 5명)
-      // 남은 인원이 7명이면 최대 5명까지 참가 가능 (1명 생존 시 다음 라운드 6명)
-      return Math.min(5, remainingCount - 1); // 최소 1명은 다음 라운드로
-    }
-
     // 경고 메시지 표시
     function showWarning(message) {
       const warningEl = document.getElementById('warning-message');
@@ -365,17 +348,18 @@
       allSurvivors = [];
       eliminatedPlayers = [];
       round = 1;
-      isFinal = shouldBeFinal(totalPlayers);
+      
+      // 처음부터 5명 이하면 바로 결승전
+      isFinal = (remainingPlayers.length <= 5);
       waitingForNext = false;
       
       document.getElementById('config').style.display = 'none';
       document.getElementById('results-table').style.display = 'none';
       
       if (isFinal) {
-        updateMessage(`결승전: 손가락을 올려주세요 (${remainingPlayers.length}명 모두 참여)`, false);
+        updateMessage(`결승전: 손가락을 올려주세요 (최소 2명, 최대 5명)`, false);
       } else {
-        const maxParticipants = getMaxParticipants(remainingPlayers.length);
-        updateMessage(`${round}라운드: 손가락을 올려주세요 (최대 ${maxParticipants}명 참여 가능)`, false);
+        updateMessage(`${round}라운드: 손가락을 올려주세요 (최소 2명, 최대 5명)`, false);
       }
       updateWinnersDisplay();
     }
@@ -453,15 +437,30 @@
         // 결승전이 끝났으므로 결과 표시
         showFinalResults();
       } else {
-        // 다음 라운드 준비
+        // 남은 인원 확인
+        if (remainingPlayers.length === 1) {
+          // 1명만 남으면 부전승으로 결승전 진출
+          const lastPlayer = remainingPlayers[0];
+          allSurvivors.push({
+            round: round + 1,
+            number: lastPlayer,
+            color: '#FFD700', // 금색으로 부전승 표시
+            isFinal: true,
+            walkover: true // 부전승 표시
+          });
+          
+          showFinalResults();
+          return;
+        }
+        
+        // 다음 라운드 준비 
         round++;
-        isFinal = shouldBeFinal(remainingPlayers.length);
+        isFinal = (remainingPlayers.length <= 5);
         
         if (isFinal) {
-          updateMessage(`결승전: 손가락을 올려주세요 (${remainingPlayers.length}명 모두 참여)`, false);
+          updateMessage(`결승전: 손가락을 올려주세요 (최소 2명, 최대 5명)`, false);
         } else {
-          const maxParticipants = getMaxParticipants(remainingPlayers.length);
-          updateMessage(`${round}라운드: 손가락을 올려주세요 (최대 ${maxParticipants}명 참여 가능)`, false);
+          updateMessage(`${round}라운드: 손가락을 올려주세요 (최소 2명, 최대 5명)`, false);
         }
       }
     }
@@ -472,9 +471,10 @@
       // 우승자 (마지막 생존자)
       const winner = allSurvivors[allSurvivors.length - 1];
       const winnerColorName = getColorName(winner.color);
+      const walkoverText = winner.walkover ? ' (부전승)' : '';
       document.getElementById('winner-list').innerHTML = 
         `<div class="player-item">
-          <span class="player-number" style="color: ${winner.color}">${winner.number}번 (${winnerColorName})</span>
+          <span class="player-number" style="color: ${winner.color}">${winner.number}번 (${winnerColorName})${walkoverText}</span>
           <span>🏆</span>
         </div>`;
 
@@ -484,11 +484,12 @@
       allSurvivors.forEach(survivor => {
         const roundLabel = survivor.isFinal ? '결승전' : `${survivor.round}라운드`;
         const colorName = getColorName(survivor.color);
+        const walkoverText = survivor.walkover ? ' (부전승)' : '';
         const item = document.createElement('div');
         item.className = 'player-item';
         item.innerHTML = `
           <span class="player-number" style="color: ${survivor.color}">${survivor.number}번 (${colorName})</span>
-          <span style="font-size: 12px;">${roundLabel} 생존</span>
+          <span style="font-size: 12px;">${roundLabel} 생존${walkoverText}</span>
         `;
         survivorsList.appendChild(item);
       });
@@ -533,26 +534,14 @@
     function checkIfIdle() {
       const currentParticipants = Object.keys(touches).length;
       
-      if (isFinal) {
-        // 결승전: 모든 남은 인원이 참여해야 함
-        if (currentParticipants === remainingPlayers.length) {
-          if (checkIdleTimeout) clearTimeout(checkIdleTimeout);
-          checkIdleTimeout = setTimeout(() => {
-            if (!gameStarted && !waitingForNext) {
-              startGame();
-            }
-          }, 3000);
-        }
-      } else {
-        // 예선 라운드: 최소 2명 이상 참여하면 시작 가능
-        if (currentParticipants >= 2) {
-          if (checkIdleTimeout) clearTimeout(checkIdleTimeout);
-          checkIdleTimeout = setTimeout(() => {
-            if (!gameStarted && !waitingForNext) {
-              startGame();
-            }
-          }, 3000);
-        }
+      // 최소 2명 이상 참여하면 3초 후 시작
+      if (currentParticipants >= 2) {
+        if (checkIdleTimeout) clearTimeout(checkIdleTimeout);
+        checkIdleTimeout = setTimeout(() => {
+          if (!gameStarted && !waitingForNext) {
+            startGame();
+          }
+        }, 3000);
       }
     }
 
@@ -560,17 +549,17 @@
       if (gameStarted || waitingForNext) return;
       
       const currentParticipants = Object.keys(touches).length;
-      const maxAllowed = getMaxParticipants(remainingPlayers.length);
+      
+      // 최대 5명까지만 참여 가능
+      if (currentParticipants >= 5) {
+        showWarning('최대 5명까지만 참여할 수 있습니다!');
+        return;
+      }
       
       updateMessage('', false);
       
       for (const t of e.changedTouches) {
-        if (currentParticipants >= maxAllowed) {
-          if (isFinal && currentParticipants < remainingPlayers.length) {
-            showWarning(`결승전에는 모든 인원이 참여해야 합니다! (${remainingPlayers.length}명)`);
-          }
-          return;
-        }
+        if (currentParticipants >= 5) return;
         
         if (!touches[t.identifier]) {
           const number = remainingPlayers.shift();
@@ -602,10 +591,9 @@
       }
       
       if (isFinal) {
-        updateMessage(`결승전: 손가락을 올려주세요 (${remainingPlayers.length}명 모두 참여)`, false);
+        updateMessage(`결승전: 손가락을 올려주세요 (최소 2명, 최대 5명)`, false);
       } else {
-        const maxParticipants = getMaxParticipants(remainingPlayers.length);
-        updateMessage(`${round}라운드: 손가락을 올려주세요 (최대 ${maxParticipants}명 참여 가능)`, false);
+        updateMessage(`${round}라운드: 손가락을 올려주세요 (최소 2명, 최대 5명)`, false);
       }
     });
 
