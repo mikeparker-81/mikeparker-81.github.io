@@ -133,11 +133,69 @@
 
 <body>
   <div class="message-card">
-    <img src="./tongtong_og.png" alt="통통이 캐릭터" />
-    <a id="store-link" class="store-button" href="#" style="display: none;">
+    <img src="./tongtong_og.png" alt="통통이 캐릭터" />    
+    <a id="manual-launch" class="store-button" href="#" style="margin-top: 8px;">
       앱이 실행되지 않으면 여기를 눌러주세요
     </a>
   </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+      const isAndroid = /android/i.test(userAgent);
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const value = urlParams.get("value") || "0";
+
+      const iosStoreURL = "https://apps.apple.com/app/id6746708206";
+      const androidStoreURL = "https://play.google.com/store/apps/details?id=kr.joybros.tongtong";
+
+      const appLaunch = () => {
+        if (isAndroid) {
+          const intentURL = `intent://cmd=tab&value=${value}#Intent;scheme=tongtong;package=kr.joybros.tongtong;end`;
+          window.location.href = intentURL;
+          setTimeout(() => {
+            document.getElementById("store-link").href = androidStoreURL;
+            document.getElementById("store-link").style.display = "inline-block";
+          }, 1500);
+        } else {
+          const schemeURL = `tongtong://cmd=tab&value=${value}`;
+          const start = Date.now();
+          window.location.href = schemeURL;
+
+          setTimeout(() => {
+            const elapsed = Date.now() - start;
+            if (elapsed < 2000) {
+              window.location.href = iosStoreURL;
+            } else {
+              document.getElementById("store-link").href = iosStoreURL;
+              document.getElementById("store-link").style.display = "inline-block";
+            }
+          }, 1500);
+        }
+      };
+
+      // 자동 실행
+      appLaunch();
+
+      // 수동 버튼
+      const manualLaunchBtn = document.getElementById("manual-launch");
+      manualLaunchBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        appLaunch();
+      });
+
+      document.addEventListener("visibilitychange", function () {
+        if (document.hidden) {
+          setTimeout(() => {
+            window.close();
+          }, 500);
+        }
+      });
+    });
+  </script>
 </body>
+
 
 </html>
