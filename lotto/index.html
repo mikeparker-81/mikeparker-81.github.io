@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta property="og:image" content="./lotteryai.png" />
+  <meta property="og:title" content="Lottery.AI - 오늘의 로또 AI 추천 & 운세" />
+  <meta property="og:description" content="AI가 뽑아주는 로또 번호와 오늘의 운세를 만나보세요! 매일 새로운 기회, Lottery.AI에서 확인하세요." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Lottery.AI 앱 실행 중...</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: linear-gradient(to bottom right, #f0f8ff, #e0f7fa);
+    }
+
+    .message-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 320px;
+      padding: 24px;
+      border-radius: 16px;
+      background: white;
+      border: 2px solid #1e88e5;
+      box-shadow: 0 8px 24px rgba(30, 136, 229, 0.3);
+      text-align: center;
+      animation: fadeIn 1s ease-in-out forwards;
+    }
+
+    .message-card img {
+      width: 72px;
+      height: 72px;
+      margin-bottom: 20px;
+      object-fit: contain;
+      border-radius: 12px;
+      border: 1px solid #1e88e5;
+      background: #fff;
+    }
+
+    .store-button {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 12px 24px;
+      background: linear-gradient(to right, #1e88e5, #1565c0);
+      color: white;
+      font-weight: bold;
+      border-radius: 8px;
+      text-decoration: none;
+      box-shadow: 0 4px 10px rgba(30, 136, 229, 0.3);
+      transition: all 0.2s ease-in-out;
+      display: none;
+    }
+
+    .store-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(30, 136, 229, 0.4);
+    }
+
+    @keyframes fadeIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.98);
+      }
+
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+  </style>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+      const isAndroid = /android/i.test(userAgent);
+
+      const iosStoreURL = "";      // 배포 전
+      const androidStoreURL = "";  // 배포 전
+
+      const appLaunch = () => {
+        const schemeURL = "mogllotto://cmd1000?tab=1";
+
+        if (isAndroid) {
+          window.location.href = schemeURL;
+          setTimeout(() => {
+            if (androidStoreURL) {
+              document.getElementById("store-link").href = androidStoreURL;
+              document.getElementById("store-link").style.display = "inline-block";
+            }
+          }, 1500);
+        } else if (isIOS) {
+          const start = Date.now();
+          window.location.href = schemeURL;
+
+          setTimeout(() => {
+            const elapsed = Date.now() - start;
+            if (elapsed < 2000 && iosStoreURL) {
+              window.location.href = iosStoreURL;
+            } else if (iosStoreURL) {
+              document.getElementById("store-link").href = iosStoreURL;
+              document.getElementById("store-link").style.display = "inline-block";
+            }
+          }, 1500);
+        }
+      };
+
+      // 자동 실행
+      appLaunch();
+
+      // 수동 버튼
+      const manualLaunchBtn = document.getElementById("manual-launch");
+      manualLaunchBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        appLaunch();
+      });
+
+      document.addEventListener("visibilitychange", function () {
+        if (document.hidden) {
+          setTimeout(() => {
+            window.close();
+          }, 500);
+        }
+      });
+    });
+  </script>
+</head>
+
+<body>
+  <div class="message-card">
+    <img src="./lotteryai.png" alt="Lottery.AI 캐릭터" />
+    <a id="manual-launch" class="store-button" href="#">
+      앱이 실행되지 않으면 여기를 눌러주세요
+    </a>
+  </div>
+</body>
+
+</html>
